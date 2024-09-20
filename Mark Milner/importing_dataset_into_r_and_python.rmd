@@ -1,0 +1,32 @@
+## Data Import 
+
+To automate this, DIFFERENTLY AND BETTER THAN THE RECORDING, we will use internal R functions which work regardless of file system. We would like a cross-platform (Windows/Linux/Mac) solution, and this is provided by the `file.path` function in R.
+
+We want to obtain the data here:
+
+https://www.kaggle.com/datasets/heidarmirhajisadati/global-economic-indicators-dataset-2010-2023
+
+
+```{r}
+base_path <- "C:/Users/markm/OneDrive/Documents/University/Year 4/dst/data"
+
+# Use file.path to create the full path to the CSV file
+csv_file_path <- file.path(base_path, "test_financial_dataset.csv")
+
+# Now read the CSV file
+data <- read.csv(csv_file_path)
+
+# View the first few rows of the dataset
+head(data)
+
+```
+
+```{python}
+import pandas as pd
+
+df = pd.read_csv(r"C:/Users/markm/OneDrive/Documents/University/Year 4/dst/data/test_financial_dataset.csv")
+
+print(df)
+
+```
+
