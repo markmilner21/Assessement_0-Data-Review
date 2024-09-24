@@ -1,1 +1,24 @@
-# Assessement_0
+# Data Science Toolbox - Assessment 0
+
+## Group Members
+- Lucy Anthony
+- Harry Wilson
+- Mark Milner
+- Lyucen Liu
+
+> **Equity split equally among group members.**
+
+## Reading Order and Requirements
+All report content can be found under the `/Report` directory and should be read in numerical order (i.e., `1_Introduction.md`...)
+
+### Requirements
+
+For this project, both R and Python are used. Below are the instructions for setting up the necessary environments:
+
+#### R Setup
+All additional packages required for R are listed in 
+All additional packages for Python will be listed in 
+
+### Evidence 
+
+Evidence of individual work can be found in their named folders
