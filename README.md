@@ -15,8 +15,10 @@ All report content can be found under the `/Report` directory and should be read
 
 For this project, both R and Python are used. Below are the instructions for setting up the necessary environments:
 
-#### R Setup
+### Setup
+
 All additional packages required for R are listed in 
+
 All additional packages for Python will be listed in 
 
 ### Evidence 
