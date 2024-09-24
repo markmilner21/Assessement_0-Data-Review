@@ -1,0 +1,67 @@
+---
+title: "R_research"
+author: "Mark Milner"
+date: "2024-09-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Packages 
+
+```{r}
+install.packages("dplyr")    # For data manipulation
+install.packages("ggplot2")  # For visualization
+install.packages("lubridate") # For date manipulation
+install.packages("zoo")      # For rolling averages
+
+```
+
+
+
+
+## Obtaining the data 
+
+Datasets at the following links:
+
+https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data
+
+https://github.com/owid/covid-19-data/tree/master/public/data
+
+https://github.com/allenai/cord19
+
+
+
+```{r}
+
+data_path = "C:/Users/markm/OneDrive/Documents/University/Year 4/dst/data"
+
+our_world_in_data_path = file.path(data_path, "our_world_in_data_covid_data.csv")
+
+owid = read.csv(our_world_in_data_path)
+
+```
+
+```{r}
+head(owid)
+```
+
+```{r}
+# Filter for the United States
+# Load the dplyr package for data manipulation
+library(dplyr)
+colnames(owid)
+us_data = filter(owid, country =="United States")
+head(us_data)
+
+
+```
+
+### Bibl
+
+https://www.rdocumentation.org/packages/dplyr/versions/1.0.10/topics/filter
+
+
