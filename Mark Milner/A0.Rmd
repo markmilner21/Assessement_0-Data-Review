@@ -13,26 +13,22 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Packages 
 
 ```{r}
-install.packages("dplyr")    # For data manipulation
 install.packages("ggplot2")  # For visualization
-install.packages("lubridate") # For date manipulation
-install.packages("zoo")      # For rolling averages
 
 ```
-
-
-
 
 ## Obtaining the data 
 
 Datasets at the following links:
 
-https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data
-
 https://github.com/owid/covid-19-data/tree/master/public/data
 
-https://github.com/allenai/cord19
+https://covid19datahub.io/articles/data.html#download-all-in-one-1 
+- https://covid19datahub.io/articles/r.html?q=r#quickstart
+- https://github.com/covid19datahub/COVID19?tab=readme-ov-file
 
+https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_daily_reports_us
+- https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series
 
 
 ```{r}
@@ -54,11 +50,66 @@ head(owid)
 # Load the dplyr package for data manipulation
 library(dplyr)
 colnames(owid)
-us_data = filter(owid, country =="United States")
-head(us_data)
-
+uk_data = filter(owid, location =="United Kingdom")
+head(uk_data)
 
 ```
+
+
+```{r}
+
+```
+
+
+```{r}
+#unlink("C:/Users/markm/AppData/Local/R/win-library/4.3/00LOCK", recursive = TRUE)
+install.packages("COVID19")
+```
+
+```{r}
+library("COVID19")
+x <- covid19()
+```
+```{r}
+#head(x)
+#1: country-level data  
+#2: state-level data
+#3: lower-level data
+#x = covid19(country = 'US',level=2)
+#head(x)
+metadata = covid19('metadata')
+head(metdata)
+```
+
+## Exploratory Data Analysis.
+
+### Heading 1
+
+### Heading 2 
+
+### Heading 3
+
+### Heading 4
+
+### Conclusions / answering the questions 
+
+• What are the broad types of data?
+• What are the main types of resource?
+• What type of problems can the resources solve?
+• Are there any generic data science resources that might be applicable? In
+what sense are they applicable?
+• How might the approach be compared to other approaches, and/or applied
+across different datasets?
+• How is the experience of sharing code via GitHub limiting, and/or enabling?
+
+
+
+
+
+
+
+
+
 
 ### Bibl
 
