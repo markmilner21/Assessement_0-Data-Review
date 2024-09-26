@@ -4,7 +4,7 @@
 - Lucy Anthony
 - Harry Wilson
 - Mark Milner
-- Lyucen Liu
+  
 
 > **Equity split equally among group members.**
 
