@@ -11,10 +11,12 @@ In the following code we analyse COVID-19 hospitalisation data within the UK and
 
 The following pre-requisites are required:
 ```{r}
-
 library(ggplot2)
+library(plyr)
 library(dplyr)
-
+library(tidyr)
+library(reshape2)
+library(lubridate)
 ```
 
 
@@ -25,7 +27,10 @@ library(dplyr)
 3. Save this file to your desired location, under the file-name 'covid-hospitalizations.csv'
 
 
+
 ## Exploratory Data Analaysis
+
+
 
 ### Initial Analaysis
 
@@ -49,6 +54,8 @@ ggplot(icu_data, aes(x = date, y = value)) +
          y = "Daily ICU Occupancy") +
     theme_minimal()
 ```
+
+
 
 ##### A brief look
 
@@ -81,9 +88,14 @@ ggplot(icu_data, aes(x = date, y = value, color = entity)) +
 
 ```
 
+
+
 #### A more focused look
 
 From this graph, we can see that each ICU occupation rate in each of the countries followed a similar pattern, by looking at the peaks and troughs. However, the problem here is that clearly our different locations have different populations. So it is not really a fair insight into how each country was doing. We can look at this more fairly by instead looking at "ICU Deaths Per Million" of each of these populations.
+
+
+
 
 
 ```{r}
@@ -113,19 +125,133 @@ ggplot(icu_data, aes(x = date, y = value, color = entity)) +
 
 ```
 
+
+
 #### Beds per million analysis
 
 We can see that each oc the countries, France initially struggled the most, doubliung Englands ICU occupancy per million. This shows how much of a strain they were under, which is backed up by the article [1]. We see England coped okay relatively, however Portugal was also put under a lot of strain in early 2021, again backed up by [2]
+
+
 
 
 ### Looking in depth
 
 We will look at the different countries we can analyse in this dataset, along with what there is to analyse in the set.
 
+
+
 ```{r}
 unique_locations <- unique(data$entity)
-unique_indicators <- unique(data$indicator)
 print(unique_locations)
+unique_indicators <- unique(data$indicator)
 print(unique_indicators)
 ```
 
+
+
+###### Analysis 2 can be on finding if there is any relation (regression?) between daily icu occupancy and daily hospital occupancy, would expect to find that there is, but not a constant one due to the introduction of vaccines
+
+
+
+```{r}
+# Assuming your dataset is already loaded as 'data'
+
+# Filter for 'England' and for the relevant indicators
+england_data <- data %>%
+    filter(entity == "England", 
+           indicator %in% c("Daily ICU occupancy", "Daily hospital occupancy"))
+
+# Reshape the data for correlation calculation
+england_wide <- england_data %>%
+    pivot_wider(names_from = indicator, values_from = value)
+
+# Calculate correlation matrix
+cor_matrix <- cor(england_wide[, c("Daily ICU occupancy", "Daily hospital occupancy")], use = "complete.obs")
+
+# Load the necessary libraries
+library(ggplot2)
+library(reshape2)
+
+# Melt the correlation matrix to long format for heatmap plotting
+cor_melt <- melt(cor_matrix)
+
+# Plot heatmap
+ggplot(cor_melt, aes(Var1, Var2, fill = value)) +
+    geom_tile() +
+    scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0) +
+    labs(title = "Correlation between Daily ICU and Hospital Occupancy in England",
+         fill = "Correlation") +
+    theme_minimal()
+```
+
+
+### A first heatmap
+
+From this, we can see there is a clear correlation between Daily ICU Occupancy and Daily Hospital, which was to be expected. I am now intrigued to see if this relation stays as strong throughout the pandemic within England.
+
+
+```{r}
+# Load required libraries
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+
+# Assuming your dataset 'data' is already loaded and has the following structure:
+# 'data.frame': 230524 obs. of 5 variables:
+#  $ entity   : chr 
+#  $ iso_code : chr 
+#  $ date     : Date, format: "YYYY-MM-DD"
+#  $ indicator: chr 
+#  $ value    : num 
+
+# Convert date column to Date type if not already done
+data$date <- as.Date(data$date)
+
+# Filter the data for the relevant indicators and select necessary columns
+data_filtered <- data %>%
+    filter(indicator %in% c("Daily ICU occupancy", "Daily hospital occupancy")) %>%
+    select(entity, date, indicator, value)
+
+# Aggregate data by month to reduce overcrowding
+data_filtered <- data_filtered %>%
+    mutate(month = floor_date(date, "month"))
+
+# Pivot data to wide format to have ICU and hospital occupancy in separate columns
+data_wide <- data_filtered %>%
+    pivot_wider(names_from = indicator, values_from = value)
+
+# Remove rows with missing values
+data_wide <- na.omit(data_wide)
+
+# Calculate the correlation between ICU occupancy and hospital occupancy for each month
+monthly_corr <- data_wide %>%
+    group_by(month) %>%
+    summarise(correlation = cor(`Daily ICU occupancy`, `Daily hospital occupancy`, use = "complete.obs"))
+
+# Create the heatmap
+ggplot(monthly_corr, aes(x = month, y = 1, fill = correlation)) +
+    geom_tile(color = "white") +
+    scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0, name = "Correlation") +
+    labs(title = "Monthly Correlation Between ICU and Hospital Occupancy",
+         x = "Month",
+         y = "",
+         fill = "Correlation") +
+    theme_minimal() +
+    theme(axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.title.y = element_blank()) +
+    scale_x_date(date_labels = "%b %Y", date_breaks = "1 month") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+
+
+
+
+
+###### Analaysis 3 could be looking at ICU rates in different countries, is there any relation? Are our findings supported by any other claims. I would expect the west to have had better resources so have done better
