@@ -437,7 +437,6 @@ scatter_plot <- ggplot(final_death_counts, aes(x = HDI, y = final_death_toll_per
   labs(title = "COVID-19 Deaths per million vs HDI by Country",
        x = "Human Development Index (HDI)",
        y = "Total Deaths (per million)",
-       color = "Country") +
   theme_minimal() +  # Use a minimal theme for a clean look
   theme(legend.position = "none")  # Position the legend to the right
 
@@ -660,8 +659,6 @@ https://r-graph-gallery.com/#:~:text=The%20R%20Graph%20Gallery%20boasts%20the%20
 https://r-statistics.co/Top50-Ggplot2-Visualizations-MasterList-R-Code.html?utm_content=cmp-true
 
 
-
-
 - dashboards - R shiny/Tableau
 data visualization: ggplot2
 time series analysis - ARIMA / Exponential smoothingv/vrolbing averages 
@@ -689,24 +686,261 @@ according to the readme file on github, data is divided up into several subheadi
 9. Others
 
 
-
-
-
 ## Section 3: Desigining a simple regression problem 
 
 - time-series forecasting (ARIME, exponential smoothing) can predict future cases
 predicted modelling: SEIR models 
 machine learning methods / regression models used to predict cases / deaths
 
+Linear Regression Model
+Polynomial Regression Model 
+Interaction model on each of these.
+
 ### Outlining our problem 
 
-### Choice of Model 
+Given my focus is on the general epidemology, it seems natural to do something related to death tolls and demographic factors. on the OWID dataset, there are multiple demographic factors that we will use in our model as potential explanatory variables. These demographic factors we will include are:
 
-### Training our model 
+1. Population Density
+2. Median Age
+3. aged_65_older
+4. aged_70_older
+5. gdp_per_capita
+6. extreme_poverty
+7. cardiovasc_death_rate
+8. handwashing facilities
+9. life_expectancy
+10. human_development_index
 
-### Testing our model
+We will be attempting to predict the new_deaths_smoothed_per_million. First things first, lets organise our data so that we have all that we need in one place.
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(tidyr)
+
+# Load your datasets
+# Assuming you have already loaded your datasets (e.g., owid, hdi, etc.)
+# For example: owid <- read.csv("path_to_owid_dataset.csv")
+# hdi <- read.csv("path_to_hdi_dataset.csv")
+
+# Select relevant columns from the OWID dataset
+selected_columns <- owid %>%
+  select(location, new_deaths_smoothed_per_million, population_density, median_age, 
+         aged_65_older, aged_70_older, gdp_per_capita, extreme_poverty, 
+         cardiovasc_death_rate, handwashing_facilities, life_expectancy, 
+         human_development_index)
+
+# Remove rows with missing total_deaths_per_million
+selected_columns <- selected_columns %>%
+  filter(!is.na(new_deaths_smoothed_per_million))
+
+print(head(selected_columns))
+
+```
+
+### Choice of Models
+
+We have decided to to run both linear and polynomial regression algorithms on our problem.
+
+```{r}
+# Create the linear regression model
+linear_model <- lm(new_deaths_smoothed_per_million ~ population_density + 
+                      median_age + 
+                      aged_65_older + 
+                      aged_70_older + 
+                      gdp_per_capita + 
+                      extreme_poverty + 
+                      cardiovasc_death_rate + 
+                      handwashing_facilities + 
+                      life_expectancy + 
+                      human_development_index,
+                    data = selected_columns)  # Use final_data for the dataset
+
+# lm fits a linear model. formula explains that price is a response variable and the others are all predictors
+
+summary(linear_model)
+# Provides a detailed summary of the linear model, including information about coefficients, statistical significance, and the model's goodness of fit.
+```
+
+Is this a bad model?
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+
+# Ensure no NA values exist in the selected columns
+selected_columns <- na.omit(selected_columns)
+
+# Fit a polynomial regression model
+quad_model <- lm(new_deaths_smoothed_per_million ~ 
+                 poly(population_density, 2) +       # 2nd degree polynomial for population density
+                 poly(median_age, 2) +              # 2nd degree polynomial for median age
+                 poly(aged_65_older, 2) +           # 2nd degree polynomial for aged 65 older
+                 poly(aged_70_older, 2) +           # 2nd degree polynomial for aged 70 older
+                 poly(gdp_per_capita, 2) +         # 2nd degree polynomial for GDP per capita
+                 poly(extreme_poverty, 2) +         # 2nd degree polynomial for extreme poverty
+                 poly(cardiovasc_death_rate, 2) +  # 2nd degree polynomial for cardiovascular death rate
+                 poly(handwashing_facilities, 2) +  # 2nd degree polynomial for handwashing facilities
+                 poly(life_expectancy, 2) +         # 2nd degree polynomial for life expectancy
+                 poly(human_development_index, 2),  # 2nd degree polynomial for human development index
+                 data = selected_columns)
+
+# Display the summary of the polynomial model
+summary(quad_model)
+
+```
+```{r}
+# Load necessary libraries
+library(dplyr)
+
+# Ensure no NA values exist in the selected columns
+selected_columns <- na.omit(selected_columns)
+
+# Fit a polynomial regression model with cubic terms
+cubic_model <- lm(new_deaths_smoothed_per_million ~ 
+                  poly(population_density, 3) +        # 3rd degree polynomial for population density
+                  poly(median_age, 3) +               # 3rd degree polynomial for median age
+                  poly(aged_65_older, 3) +            # 3rd degree polynomial for aged 65 older
+                  poly(aged_70_older, 3) +            # 3rd degree polynomial for aged 70 older
+                  poly(gdp_per_capita, 3) +          # 3rd degree polynomial for GDP per capita
+                  poly(extreme_poverty, 3) +          # 3rd degree polynomial for extreme poverty
+                  poly(cardiovasc_death_rate, 3) +   # 3rd degree polynomial for cardiovascular death rate
+                  poly(handwashing_facilities, 3) +   # 3rd degree polynomial for handwashing facilities
+                  poly(life_expectancy, 3) +          # 3rd degree polynomial for life expectancy
+                  poly(human_development_index, 3),    # 3rd degree polynomial for human development index
+                  data = selected_columns)
+
+# Display the summary of the cubic model
+summary(cubic_model)
+
+```
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+
+# Ensure no NA values exist in the selected columns
+selected_columns <- na.omit(selected_columns)
+
+# Fit a polynomial regression model with quartic terms
+quartic_model <- lm(new_deaths_smoothed_per_million ~ 
+                    poly(population_density, 4) +        # 4th degree polynomial for population density
+                    poly(median_age, 4) +               # 4th degree polynomial for median age
+                    poly(aged_65_older, 4) +            # 4th degree polynomial for aged 65 older
+                    poly(aged_70_older, 4) +            # 4th degree polynomial for aged 70 older
+                    poly(gdp_per_capita, 4) +          # 4th degree polynomial for GDP per capita
+                    poly(extreme_poverty, 4) +          # 4th degree polynomial for extreme poverty
+                    poly(cardiovasc_death_rate, 4) +   # 4th degree polynomial for cardiovascular death rate
+                    poly(handwashing_facilities, 4) +   # 4th degree polynomial for handwashing facilities
+                    poly(life_expectancy, 4) +          # 4th degree polynomial for life expectancy
+                    poly(human_development_index, 4),    # 4th degree polynomial for human development index
+                    data = selected_columns)
+
+# Display the summary of the quartic model
+summary(quartic_model)
+
+```
+
+
+```{r}
+length(selected_columns)
+```
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+
+# Ensure no NA values exist in the selected columns
+selected_columns <- na.omit(selected_columns)
+
+# Fit a sixteenth-degree polynomial regression model
+tenth_degree_model <- lm(new_deaths_smoothed_per_million ~ 
+                             poly(population_density, 10) +        # 16th degree polynomial for population density
+                             poly(median_age, 10) +               # 16th degree polynomial for median age
+                             poly(aged_65_older, 10) +            # 16th degree polynomial for aged 65 older
+                             poly(aged_70_older, 10) +            # 16th degree polynomial for aged 70 older
+                             poly(gdp_per_capita, 10) +          # 16th degree polynomial for GDP per capita
+                             poly(extreme_poverty, 10) +          # 16th degree polynomial for extreme poverty
+                             poly(cardiovasc_death_rate, 10) +   # 16th degree polynomial for cardiovascular death rate
+                             poly(handwashing_facilities, 10) +   # 16th degree polynomial for handwashing facilities
+                             poly(life_expectancy, 10) +          # 16th degree polynomial for life expectancy
+                             poly(human_development_index, 10),    # 16th degree polynomial for human development index
+                             data = selected_columns)
+
+# Display the summary of the sixteenth-degree model
+summary(tenth_degree_model)
+
+```
+
+```{r}
+
+# Make predictions for each model
+linear_pred <- predict(linear_model, selected_columns)         # Predictions from the linear model
+quadratic_pred <- predict(quad_model, selected_columns)       # Predictions from the quadratic model
+cubic_pred <- predict(cubic_model, selected_columns)          # Predictions from the cubic model
+quartic_pred <- predict(quartic_model, selected_columns)      # Predictions from the quartic model
+tenth_degree_pred <- predict(tenth_degree_model, selected_columns) # Predictions from the 10th-degree model
+
+# Create a plot
+plot(selected_columns$new_deaths_smoothed_per_million, type = "p", 
+     xlab = "Index", 
+     ylab = "Total Deaths per Million", 
+     pch = 19, 
+     cex = 0.5, 
+     col = "grey", 
+     main = "Predictions from Linear and Polynomial Models")
+
+# Add predicted values to the plot
+lines(linear_pred, col = "red", lwd = 2)        # Linear model predictions
+lines(quadratic_pred, col = "blue", lwd = 2)    # Quadratic model predictions
+lines(cubic_pred, col = "orange", lwd = 2)      # Cubic model predictions
+lines(quartic_pred, col = "green", lwd = 2)     # Quartic model predictions
+lines(tenth_degree_pred, col = "purple", lwd = 2) # 10th-degree model predictions
+
+# Add a legend
+legend("topleft", 
+       legend = c("Data", "Predicted (linear)", "Predicted (quadratic)", 
+                  "Predicted (cubic)", "Predicted (quartic)", "Predicted (10th degree)"), 
+       lty = c(NA, 1, 1, 1, 1, 1), 
+       pch = c(19, NA, NA, NA, NA, NA), 
+       col = c("grey", "red", "blue", "orange", "green", "purple"), 
+       text.col = c("grey", "red", "blue", "orange", "green", "purple"))
+
+
+```
+
+```{r}
+
+# Split data into training and testing sets (80% training, 20% testing)
+set.seed(123)  # For reproducibility
+train_index <- createDataPartition(selected_columns$new_deaths_smoothed_per_million, p = 0.8, list = FALSE)
+train_data <- selected_columns[train_index, ]
+test_data <- selected_columns[-train_index, ]
+
+library(rpart)
+
+# Fit a decision tree model
+tree_model <- rpart(new_deaths_smoothed_per_million ~ ., data = train_data)
+
+# Make predictions
+tree_predictions <- predict(tree_model, newdata = test_data)
+
+# Calculate Mean Absolute Error
+mae_tree <- mean(abs(test_data$new_deaths_smoothed_per_million - tree_predictions))
+print(paste("Mean Absolute Error (Decision Tree):", mae_tree))
+
+# Calculate R-squared
+rsq_tree <- cor(test_data$new_deaths_smoothed_per_million, tree_predictions)^2
+print(paste("R-squared (Decision Tree):", rsq_tree))
+
+
+```
+
+What to say about these results
 
 ## Section 4: Conclusions / answering the questions 
+
+
 
 is this dataset good for a clasification problem?
 are any of the datasets useful for this first assessment 
