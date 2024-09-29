@@ -1,29 +1,131 @@
 ---
-title: "A0_HW"
+title: "Assessment 0"
 output: html_document
-date: "2024-09-26"
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+
+## Introduction
+
+In the following code we analyse COVID-19 hospitalisation data within the UK and across the world. We aim to look for any relations between the data through the code we find, and seeing how we can improve our findings to give us more insight into how the global pandemic affected healthcare facilities worldwide.
+
+
+The following pre-requisites are required:
+```{r}
+
+library(ggplot2)
+library(dplyr)
+
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+## Instructions for importing the dataset
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+1. The first dataset is here: https://ourworldindata.org/covid-hospitalizations
+2. You can find a link to the CSV file on Our World in Data's GitHub here, called 'covid-hospitalizations.csv': https://github.com/owid/covid-19-data/tree/master/public/data/hospitalizations
+3. Save this file to your desired location, under the file-name 'covid-hospitalizations.csv'
 
-```{r cars}
-summary(cars)
+
+## Exploratory Data Analaysis
+
+### Initial Analaysis
+
+In this section we will complete an first analysis to see how different countries across the world coped.
+
+```{r}
+# Read the dataset
+data <- read.csv("/Users/harrywilson/Desktop/DataScienceToolbox/DataSets/covid-hospitalizations.csv")
+
+# Select only the relevant columns
+data$date <- as.Date(data$date)
+icu_data <- data %>%
+    filter(indicator == "Daily ICU occupancy") %>%
+    select(date, value)  
+
+# Make the plot
+ggplot(icu_data, aes(x = date, y = value)) +
+    geom_line(color = "blue") +
+    labs(title = "Daily ICU Occupancy Over Time",
+         x = "Date",
+         y = "Daily ICU Occupancy") +
+    theme_minimal()
 ```
 
-## Including Plots
+##### A brief look
 
-You can also embed plots, for example:
+In this first graph, we are looking at all the countries in our data set and their sum of ICU (Intensive Care Unit) occupancies throughout the pandemic and the year that follows. I want to filter our data into only selected countries, as this data only looks at 50 countries, and at the moment we don't even have a list of them. So this isn't too informative aside from looking at general trends across the globe. Which we can see the ICU rates have dropped massively since their last peak in the early months of 2021.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# Read the dataset
+data <- read.csv("/Users/harrywilson/Desktop/DataScienceToolbox/DataSets/covid-hospitalizations.csv")
+
+# Convert date column to Date type
+data$date <- as.Date(data$date)
+
+# Select only relevant columns and filter for specific locations
+selected_locations <- c("England", "France", "Portugal")  # Replace with your desired countries
+
+icu_data <- data %>%
+    filter(indicator == "Daily ICU occupancy", entity %in% selected_locations) %>%
+    select(date, entity, value)
+
+# Make the plot
+ggplot(icu_data, aes(x = date, y = value, color = entity)) +
+    geom_line() +
+    labs(title = "Daily ICU Occupancy Over Time",
+         x = "Date",
+         y = "Daily ICU Occupancy") +
+    theme_minimal()
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+#### A more focused look
+
+From this graph, we can see that each ICU occupation rate in each of the countries followed a similar pattern, by looking at the peaks and troughs. However, the problem here is that clearly our different locations have different populations. So it is not really a fair insight into how each country was doing. We can look at this more fairly by instead looking at "ICU Deaths Per Million" of each of these populations.
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# Read the dataset
+data <- read.csv("/Users/harrywilson/Desktop/DataScienceToolbox/DataSets/covid-hospitalizations.csv")
+
+# Convert date column to Date type
+data$date <- as.Date(data$date)
+
+# Select only relevant columns and filter for specific locations
+selected_locations <- c("England", "France", "Portugal")  # Replace with your desired countries
+
+icu_data <- data %>%
+    filter(indicator == "Daily ICU occupancy per million", entity %in% selected_locations) %>%
+    select(date, entity, value)
+
+# Make the plot
+ggplot(icu_data, aes(x = date, y = value, color = entity)) +
+    geom_line() +
+    labs(title = "Daily ICU Occupancy per Million Over Time",
+         x = "Date",
+         y = "Daily ICU Occupancy per Million") +
+    theme_minimal()
+
+```
+
+#### Beds per million analysis
+
+We can see that each oc the countries, France initially struggled the most, doubliung Englands ICU occupancy per million. This shows how much of a strain they were under, which is backed up by the article [1]. We see England coped okay relatively, however Portugal was also put under a lot of strain in early 2021, again backed up by [2]
+
+
+### Looking in depth
+
+We will look at the different countries we can analyse in this dataset, along with what there is to analyse in the set.
+
+```{r}
+unique_locations <- unique(data$entity)
+unique_indicators <- unique(data$indicator)
+print(unique_locations)
+print(unique_indicators)
+```
+
