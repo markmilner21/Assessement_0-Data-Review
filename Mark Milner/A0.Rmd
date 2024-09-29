@@ -29,7 +29,13 @@ https://covid19datahub.io/articles/data.html#download-all-in-one-1
 
 https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_daily_reports_us
 - https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series
+- downloaded time_series_covid19_confirmed_US.csv
+- time_series_covid19_deaths_US.csv
+- largest data files
 
+## Section 1: Data access
+
+### "Our World in Data" dataset
 
 ```{r}
 
@@ -50,16 +56,37 @@ head(owid)
 # Load the dplyr package for data manipulation
 library(dplyr)
 colnames(owid)
-uk_data = filter(owid, location =="United Kingdom")
-head(uk_data)
+india_data = filter(owid, location =="India")
+head(india_data)
 
 ```
 
+### Dataset from Center for Systems Science and Engineering (CSSE) at Johns Hopkins University
+
+this dataset...
 
 ```{r}
 
+JHU_confirmed = file.path(data_path, "time_series_covid19_confirmed_US.csv")
+JHU_deaths = file.path(data_path, "time_series_covid19_deaths_US.csv")
+
+JHU_c = read.csv(JHU_confirmed)
+JHU_d = read.csv(JHU_deaths)
+
 ```
 
+```{r}
+head(JHU_c)
+```
+
+```{r}
+head(JHU_d)
+```
+
+### Datset from Covid-19 Datahub
+Documentation: 
+
+https://cran.r-project.org/web/packages/COVID19/COVID19.pdf
 
 ```{r}
 #unlink("C:/Users/markm/AppData/Local/R/win-library/4.3/00LOCK", recursive = TRUE)
@@ -70,39 +97,866 @@ install.packages("COVID19")
 library("COVID19")
 x <- covid19()
 ```
+
+note much of this data may be replicated as john hopkins and OWID are credited in the data sourced 
+
 ```{r}
 #head(x)
 #1: country-level data  
 #2: state-level data
 #3: lower-level data
-#x = covid19(country = 'US',level=2)
-#head(x)
-metadata = covid19('metadata')
-head(metdata)
+us = covid19(country = 'US',level=2)
+head(us)
 ```
 
-## Exploratory Data Analysis.
+## Section 2: Exploratory Data Analysis.
 
-### Heading 1
+Ok so now we've got all of our data and loaded it into our R environment. We want to now explore the dataset. Key Epidemiological questions I hope to address include. In order to simplify some of our graphs so that they are interpretable by the user, we will select several countries to focus our data Analysis on. This selection will be based both on the quality of data that the country has and its geographical location. These will be:
+1. United States
+```{r}
+us_data <- owid %>%
+  filter(location == "United States")
+```
+2. United Kingdom
+```{r}
+uk_data <- owid %>%
+  filter(location == "United Kingdom")
+```
 
-### Heading 2 
+3. Brazil
+```{r}
+brazil_data <- owid %>%
+  filter(location == "Brazil")
+```
 
-### Heading 3
+4. Germany
+```{r}
+germany_data <- owid %>%
+  filter(location == "Germany")
+```
 
-### Heading 4
+5. Japan
+```{r}
+japan_data <- owid %>%
+  filter(location == "Japan")
+```
 
-### Conclusions / answering the questions 
+6. India
+```{r}
+india_data <- owid %>%
+  filter(location == "India")
+```
 
-• What are the broad types of data?
-• What are the main types of resource?
-• What type of problems can the resources solve?
-• Are there any generic data science resources that might be applicable? In
-what sense are they applicable?
-• How might the approach be compared to other approaches, and/or applied
-across different datasets?
-• How is the experience of sharing code via GitHub limiting, and/or enabling?
+7. Australia
+```{r}
+# Example: Filter for the United States
+aus_data <- owid %>%
+  filter(location == "Australia")
+```
 
 
+```{r}
+#1. filtering the data to only include the relevant countries 
+
+
+library(dplyr)
+
+# Define the countries of interest
+#selected_countries <- c("United States", "United Kingdom", "Brazil", "Germany", "Japan", "India", "Australia")
+
+# Filter the dataset for these countries
+#selected_data <- owid %>%
+ # filter(location %in% selected_countries)
+
+# Check the filtered dataset
+#head(selected_data)
+
+# DATES WERE ORDERED WEIRDLY SO DON'T LIKE THIS^^
+
+# Define the selected countries
+selected_countries <- c("United States", "United Kingdom", "Brazil", "Germany", "Japan", "India", "Australia")
+
+# Step 1: Filter the dataset for these countries using base R
+selected_data <- owid[owid$location %in% selected_countries, ]
+
+# Check the first few rows of the filtered dataset
+head(selected_data)
+
+```
+
+```{r}
+for (i in 1:nrow(selected_data)) {
+  # Convert the character date to Date format
+  #print(selected_data$date[i])
+  day = substring(selected_data$date[i],1,2)
+  month = substring(selected_data$date[i],4,5)
+  year = substring(selected_data$date[i],7,10)
+  new_format = paste(year, month, day, sep = "-") 
+  #print(new_format)
+  selected_data$date[i] = new_format
+  #print(selected_data$date[i])
+  
+  #print(as.Date(selected_data$date[i], "%d/%m/%y"))
+ # selected_data$date[i] = as.Date(selected_data$date[i], "%d/%m/%y")
+}
+
+
+#for (i in 1:nrow(selected_data)) {
+ # new_date_format[i] = as.Date(selected_data$date[i], "%d/%m/%y")
+ # print(new_date_format[i])
+
+
+
+
+ # selected_data$date[i] = as_date(selected_date$date[i])
+ # selected_data$date[i] <- as.date(selected_data$date[i], format = "%Y-%m-%d")
+  
+
+```
+
+1. Key epidemiological Metrics:
+
+- death tolls 
+
+
+```{r}
+# Load ggplot2
+library(ggplot2)
+
+
+
+# Create the plot - this plot has too much data and is weird / not very representative of anything
+ggplot(us_data, aes(x = date, y = total_deaths)) +
+  geom_point(color = "blue") +  # Add points
+  labs(x = "Date", y = "Total Deaths", title = "Total Death Count Over Time") +
+  theme_minimal()
+
+
+
+
+
+
+```
+
+
+
+```{r}
+for (i in 1:nrow(uk_data)) {
+  cat("Date:", uk_data$date[i], "- Total Deaths:", uk_data$total_deaths[i], "\n")
+}
+
+#print(length(uk_data$total_deaths))
+
+```
+
+
+```{r}
+# Install ggplot2 if you haven't already
+# install.packages("ggplot2")
+
+# Load ggplot2
+library(ggplot2)
+
+# Plot using ggplot2
+ggplot(selected_data, aes(x = date, y = total_deaths, group=location, color=location)) +
+  geom_line() +
+  labs(title = "Total Deaths over Time", x = "Date", y = "Total Deaths") +
+  theme_minimal()
+
+```
+Success...but lets normalise these figures as a percentage of their total population. to do this, we shall add a column to our dataset called normalised death count. first we need an accurate value of the populations of these countries. For simplicity, we will select the population as of January 2020 from World Bank Population Data and United Nations Population Division. Links to these are below:
+ed_death_count[i] <- NA  # If country not found in population list, set to NA
+
+```{r}
+library(ggplot2)
+
+# Plot using ggplot2
+ggplot(selected_data, aes(x = date, y = total_deaths_per_million, group=location, color=location)) +
+  geom_line() +
+  labs(title = "Total Deaths (per million) over Time", x = "Date", y = "Total Deaths") +
+  theme_minimal()
+
+```
+
+Nice. So now we've got a normalised figure. But there are so many dates that you can't see any of them. Let's change it so that the dates are only shown in 6 month invertvals
+
+```{r}
+library(ggplot2)
+
+
+
+# Plot using ggplot2
+ggplot(selected_data, aes(x = as.Date(date), y = total_deaths_per_million, group=location, color=location)) +
+  geom_line() +
+  labs(title = "Total Deaths (per million) over Time", x = "Date", y = "Total Deaths") +
+  scale_x_date(date_breaks = "12 months", date_labels = "%b %Y") +
+  theme_minimal()
+```
+- the rate of spread
+
+Rate of spread is an important epidemiological factor. 
+
+the column new_cases_smoothed typically refers to the smoothed average of new COVID-19 cases over a period of days, often 7 days. It's used to remove day-to-day fluctuations in case counts, which might be due to factors like inconsistent reporting on weekends, testing variability, or holidays.
+
+
+```{r}
+library(ggplot2)
+library(ggridges)
+
+
+#ggplot(selected_data, aes(x = date, y = location, height = new_cases_smoothed, fill = location, color=location)) +
+ # geom_density_ridges(stat = "identity") +
+  #labs(title = "COVID-19 New Cases (Smoothed) by Country",
+   #    x = "Date",
+    #   y = "Country") +
+#  theme_minimal() +
+  theme(legend.position = "none")
+
+selected_data <- selected_data[!is.na(selected_data$new_cases_smoothed), ]  # Remove rows with NA
+
+# Step 3: Create the ridgeline plot
+ggplot(selected_data, aes(x = date, y = location, height = new_cases_smoothed, fill = location, color = location)) +
+  geom_density_ridges(stat = "identity", scale = 5, rel_min_height = 0.01) +
+  labs(title = "COVID-19 New Cases (Smoothed) by Country",
+       x = "Date",
+       y = "Country") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+#https://r-statistics.co/Top50-Ggplot2-Visualizations-MasterList-R-Code.html#6.%20Change
+
+cases = ggplot(selected_data, aes(x = as.Date(date), y = new_cases_smoothed, color = location, group=location)) +
+  geom_line() +
+  facet_wrap(~ location, scales = "free_y") +  # Create small multiples by location
+  labs(title = "Smoothed New COVID-19 Cases Over Time by Country",
+       x = "Date",
+       y = "New Cases (Smoothed)") +
+  theme_minimal() +
+  theme(legend.position = "none")  # Hide legend if not needed
+cases
+
+```
+```{r}
+# Load necessary libraries
+library(ggplot2)
+library(dplyr)
+
+# Assume selected_data is already prepared and contains the required columns
+# For example, let's create a stacked area chart for new cases over time for selected countries
+
+# Summarize data if needed (example: total cases per date per country)
+stacked_data <- selected_data %>%
+  group_by(date, location) %>%
+  summarise(total_cases = sum(new_cases_smoothed, na.rm = TRUE), .groups = 'drop')
+
+# Create a stacked area plot
+stacked_area_plot <- ggplot(stacked_data, aes(x = as.Date(date), y = total_cases, fill = location)) +
+  geom_area(alpha = 0.5) +  # Adjust alpha for transparency
+  labs(title = "Stacked Area Chart of COVID-19 New Cases Over Time",
+       x = "Date",
+       y = "Total New Cases") +
+  theme_minimal() +
+  theme(legend.position = "right")  # Adjust legend position as needed
+
+# Display the plot
+print(stacked_area_plot)
+
+```
+
+- case count vs mortality rate (where death is attributed to covid)
+
+```{r}
+# Create a scatter plot to visualize the relationship
+scatter_plot <- ggplot(selected_data, aes(x = total_cases, y = total_deaths, color = location)) +
+  geom_point(size = 2, alpha = 0.7) +  # Adjust point size and transparency
+  labs(title = "COVID-19 Cases vs Deaths by Country",
+       x = "Total Cases",
+       y = "Total Deaths",
+       color = "Country") +
+  theme_minimal()
+
+# Display the scatter plot
+print(scatter_plot)
+
+```
+```{r}
+# Create a scatter plot to visualize the relationship
+scatter_plot <- ggplot(selected_data, aes(x = total_cases_per_million, y = total_deaths_per_million, color = location)) +
+  geom_point(size = 2, alpha = 0.7) +  # Adjust point size and transparency
+  labs(title = "COVID-19 Cases vs Deaths by Country (per million)",
+       x = "Total Cases (per million)",
+       y = "Total Deaths (per million)",
+       color = "Country") +
+  theme_minimal()
+
+# Display the scatter plot
+print(scatter_plot)
+
+```
+
+- HDI vs final death toll (per million)
+
+We are now going to analyse the relationship between HDI (Human Development Index) and the final death toll as intuitively, one might expect that there is a positive correlation between these two statistics. We see that total death count is a cumulative value and so we want to calculate the final death count provided by the data set which is easily done as we just select the most recent value provided by that country. 
+
+```{r}
+library(dplyr)
+
+# Summarize data to get the last available date and total death toll for each country
+final_death_counts <- owid %>%
+  group_by(location) %>%  # Group by country
+  filter(date == max(date, na.rm = TRUE)) %>%  # Get the latest date for each country
+  summarise(final_death_toll_per_million = max(total_deaths_per_million, na.rm = TRUE), 
+            HDI = human_development_index) %>%  # Get the cumulative death toll
+  filter(!is.na(HDI))  # Remove rows with NA in HDI
+
+# Display the final death counts for each country
+print(head(final_death_counts))
+
+
+
+
+
+
+
+```
+
+
+```{r}
+# Load necessary libraries
+library(ggplot2)
+
+# Create the scatter plot
+scatter_plot <- ggplot(final_death_counts, aes(x = HDI, y = final_death_toll_per_million, color = location)) +
+  geom_point(size = 3, alpha = 0.7) +  # Adjust point size and transparency
+  labs(title = "COVID-19 Deaths per million vs HDI by Country",
+       x = "Human Development Index (HDI)",
+       y = "Total Deaths (per million)",
+  theme_minimal() +  # Use a minimal theme for a clean look
+  theme(legend.position = "none")  # Position the legend to the right
+
+# Display the scatter plot
+print(scatter_plot)
+
+```
+
+```{r}
+# Summarize data to include handwashing facilities, population density, and HDI
+final_death_counts <- owid %>%
+  group_by(location) %>%
+  filter(date == max(date, na.rm = TRUE)) %>%
+  summarise(final_death_toll_per_million = max(total_deaths_per_million, na.rm = TRUE), 
+            HDI = human_development_index,
+            handwashing_facilities = handwashing_facilities,  
+            population_density = population_density,  
+            .groups = 'drop') %>%
+  filter(!is.na(handwashing_facilities) & !is.na(population_density) & !is.na(HDI))  # Remove NA values
+
+# Display the updated final death counts for each country
+print(final_death_counts)
+
+
+```
+
+```{r}
+library(ggplot2)
+
+# Create the scatter plot
+scatter_plot <- ggplot(final_death_counts, aes(x = handwashing_facilities, y = final_death_toll_per_million, color = location)) +
+  geom_point(size = 3, alpha = 0.7) +  # Adjust point size and transparency
+  labs(title = "COVID-19 Deaths per million vs handwashing facilities by Country",
+       x = "Handwashing Facilities (% of total population)",
+       y = "Total Deaths (per million)",
+       color = "Country") +
+  theme_minimal() +  # Use a minimal theme for a clean look
+  theme(legend.position = "none")  # Position the legend to the right
+
+# Display the scatter plot
+print(scatter_plot)
+
+```
+
+
+```{r}
+library(ggplot2)
+
+# Create the scatter plot
+scatter_plot <- ggplot(final_death_counts, aes(x = population_density, y = final_death_toll_per_million, color = location)) +
+  geom_point(size = 3, alpha = 0.7) +  # Adjust point size and transparency
+  labs(title = "COVID-19 Deaths per million vs Population density by Country",
+       x = "Population density",
+       y = "Total Deaths (per million)",
+       color = "Country") +
+  theme_minimal() +  # Use a minimal theme for a clean look
+  theme(legend.position = "none")  # Position the legend to the right
+
+# Display the scatter plot
+print(scatter_plot)
+```
+
+
+- calculating the basic reproduction number (SIR model)
+
+The basic reproduction number is an important epidemiological metric that indicates the average number of secondary infections produced by one infected individual in a fully susceptible population.
+
+```{r}
+for (i in 1:nrow(owid)) {
+  cat("Country:", owid$location[i], "- Reproduction rate:", owid$reproduction_rate[i], "\n")
+}
+```
+
+
+
+
+JHU data
+
+```{r}
+
+install.packages(c("sf", "maps", "mapdata"))
+install.packages("viridis")
+
+library(ggplot2)
+library(dplyr)
+library(sf)
+library(maps)
+library(mapdata)
+```
+
+
+```{r}
+# Load necessary library
+library(dplyr)
+
+# Assuming 'jhu_d' is your dataset and the last column with deaths is 'X3.9.23'
+# Create cumulative death toll dataset
+cumulative_death_toll <- JHU_d %>%
+  group_by(Province_State) %>%  # Group by state
+  summarise(total_deaths = sum(X3.9.23, na.rm = TRUE))  # Sum deaths for each state
+
+cumulative_case_toll <- JHU_c %>%
+  group_by(Province_State) %>%  # Group by state
+  summarise(total_cases = sum(X3.9.23, na.rm = TRUE))  # Sum deaths for each state
+
+# Display the resulting dataset
+print(head(cumulative_death_toll))
+print(head(cumulative_case_toll))
+
+
+```
+```{r}
+# Load necessary libraries
+library(ggplot2)
+library(dplyr)
+library(maps)
+library(viridis)  # For color scales
+
+# Load US state map data
+states_map <- map_data("state") 
+
+# Assuming cumulative_death_toll is already loaded and has a 'state' column
+# Make sure state names are in lower case
+cumulative_death_toll$state <- tolower(cumulative_death_toll$Province_State)
+
+# Merge the map data with the cumulative death toll data
+map_data_with_deaths <- states_map %>%
+  left_join(cumulative_death_toll, by = c("region" = "state"))
+
+# Create the choropleth map
+choropleth_map_deaths <- ggplot(map_data_with_deaths, aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = total_deaths), color = "black", linewidth = 0.1) +  # Use linewidth instead of size
+  scale_fill_viridis(option = "C", direction = -1, na.value = "grey") +  # Color scale
+  labs(title = "COVID-19 Total Death Toll by State in the USA",
+       fill = "Total Deaths") +
+  theme_minimal()
+
+
+
+# Display the map
+print(choropleth_map_deaths)
+
+
+
+
+
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(maps)
+library(viridis)  # For color scales
+
+# Load US state map data
+states_map <- map_data("state") 
+
+# Convert state names to lower case for the cumulative_case_toll dataset
+cumulative_case_toll$state <- tolower(cumulative_case_toll$Province_State)
+
+# Merge the map data with the cumulative case toll data
+map_data_with_cases <- states_map %>%
+  left_join(cumulative_case_toll, by = c("region" = "state"))
+
+# Create the choropleth map for cases
+choropleth_map_cases <- ggplot(map_data_with_cases, aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = total_cases), color = "black", linewidth = 0.1) +
+  scale_fill_viridis(option = "C", direction = -1, na.value = "grey") +
+  labs(title = "COVID-19 Total Case Toll by State in the USA",
+       fill = "Total Cases") +
+  theme_minimal()
+
+# Display the map
+print(choropleth_map_cases)
+
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# Ensure both datasets have lower case state names for merging
+cumulative_case_toll$state <- tolower(cumulative_case_toll$Province_State)
+cumulative_death_toll$state <- tolower(cumulative_death_toll$Province_State)
+
+# Merge datasets on state
+combined_data <- cumulative_case_toll %>%
+  select(state, total_cases) %>%  # Select only necessary columns
+  left_join(cumulative_death_toll %>% select(state, total_deaths), by = "state")
+
+# Create the scatter plot without a legend
+scatter_plot <- ggplot(combined_data, aes(x = total_cases, y = total_deaths)) +
+  geom_point(aes(color = state), size = 3, alpha = 0.7, show.legend = FALSE) +  # No legend
+  labs(title = "COVID-19 Total Cases vs Total Deaths by State",
+       x = "Total Cases",
+       y = "Total Deaths") +
+  theme_minimal()
+
+# Display the scatter plot
+print(scatter_plot)
+
+```
+
+2. Relationship analysis:
+
+analysing potential correlations with various factors e.g. economic activity / pop dens / age demographics
+
+necessary graphs:
+1. heatmap of case growth by country 
+2. bar plot of mortality rate by age group
+
+3. population density vs case rate with bubble plot
+4. treeplot using squarify
+5. pie chart - death tolls / death tolls normalised / isolated larger freqs and other / continents
+6. scatter plot of variable (see modelselection sheet)
+
+
+https://r-graph-gallery.com/#:~:text=The%20R%20Graph%20Gallery%20boasts%20the%20most%20extensive%20compilation%20of
+
+https://r-statistics.co/Top50-Ggplot2-Visualizations-MasterList-R-Code.html?utm_content=cmp-true
+
+
+- dashboards - R shiny/Tableau
+data visualization: ggplot2
+time series analysis - ARIMA / Exponential smoothingv/vrolbing averages 
+
+
+### What are the broad types of data in these datasets?
+
+```{r}
+str(owid)
+summary(owid)
+```
+
+Above you can see all the variables and their data types
+generally numerical variables besides country codes, locations 
+according to the readme file on github, data is divided up into several subheadings:
+
+1. Confirmed Cases
+2. Confirmed deaths
+3. Excess mortality
+4. Hospital and ICU 
+5. Policy responses
+6. Reproduction rate
+7. Tests and positivity
+8. Vaccinations
+9. Others
+
+
+## Section 3: Desigining a simple regression problem 
+
+- time-series forecasting (ARIME, exponential smoothing) can predict future cases
+predicted modelling: SEIR models 
+machine learning methods / regression models used to predict cases / deaths
+
+Linear Regression Model
+Polynomial Regression Model 
+Interaction model on each of these.
+
+### Outlining our problem 
+
+Given my focus is on the general epidemology, it seems natural to do something related to death tolls and demographic factors. on the OWID dataset, there are multiple demographic factors that we will use in our model as potential explanatory variables. These demographic factors we will include are:
+
+1. Population Density
+2. Median Age
+3. aged_65_older
+4. aged_70_older
+5. gdp_per_capita
+6. extreme_poverty
+7. cardiovasc_death_rate
+8. handwashing facilities
+9. life_expectancy
+10. human_development_index
+
+We will be attempting to predict the new_deaths_smoothed_per_million. First things first, lets organise our data so that we have all that we need in one place.
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(tidyr)
+
+# Load your datasets
+# Assuming you have already loaded your datasets (e.g., owid, hdi, etc.)
+# For example: owid <- read.csv("path_to_owid_dataset.csv")
+# hdi <- read.csv("path_to_hdi_dataset.csv")
+
+# Select relevant columns from the OWID dataset
+selected_columns <- owid %>%
+  select(location, new_deaths_smoothed_per_million, population_density, median_age, 
+         aged_65_older, aged_70_older, gdp_per_capita, extreme_poverty, 
+         cardiovasc_death_rate, handwashing_facilities, life_expectancy, 
+         human_development_index)
+
+# Remove rows with missing total_deaths_per_million
+selected_columns <- selected_columns %>%
+  filter(!is.na(new_deaths_smoothed_per_million))
+
+print(head(selected_columns))
+
+```
+
+### Choice of Models
+
+We have decided to to run both linear and polynomial regression algorithms on our problem.
+
+```{r}
+# Create the linear regression model
+linear_model <- lm(new_deaths_smoothed_per_million ~ population_density + 
+                      median_age + 
+                      aged_65_older + 
+                      aged_70_older + 
+                      gdp_per_capita + 
+                      extreme_poverty + 
+                      cardiovasc_death_rate + 
+                      handwashing_facilities + 
+                      life_expectancy + 
+                      human_development_index,
+                    data = selected_columns)  # Use final_data for the dataset
+
+# lm fits a linear model. formula explains that price is a response variable and the others are all predictors
+
+summary(linear_model)
+# Provides a detailed summary of the linear model, including information about coefficients, statistical significance, and the model's goodness of fit.
+```
+
+Is this a bad model?
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+
+# Ensure no NA values exist in the selected columns
+selected_columns <- na.omit(selected_columns)
+
+# Fit a polynomial regression model
+quad_model <- lm(new_deaths_smoothed_per_million ~ 
+                 poly(population_density, 2) +       # 2nd degree polynomial for population density
+                 poly(median_age, 2) +              # 2nd degree polynomial for median age
+                 poly(aged_65_older, 2) +           # 2nd degree polynomial for aged 65 older
+                 poly(aged_70_older, 2) +           # 2nd degree polynomial for aged 70 older
+                 poly(gdp_per_capita, 2) +         # 2nd degree polynomial for GDP per capita
+                 poly(extreme_poverty, 2) +         # 2nd degree polynomial for extreme poverty
+                 poly(cardiovasc_death_rate, 2) +  # 2nd degree polynomial for cardiovascular death rate
+                 poly(handwashing_facilities, 2) +  # 2nd degree polynomial for handwashing facilities
+                 poly(life_expectancy, 2) +         # 2nd degree polynomial for life expectancy
+                 poly(human_development_index, 2),  # 2nd degree polynomial for human development index
+                 data = selected_columns)
+
+# Display the summary of the polynomial model
+summary(quad_model)
+
+```
+```{r}
+# Load necessary libraries
+library(dplyr)
+
+# Ensure no NA values exist in the selected columns
+selected_columns <- na.omit(selected_columns)
+
+# Fit a polynomial regression model with cubic terms
+cubic_model <- lm(new_deaths_smoothed_per_million ~ 
+                  poly(population_density, 3) +        # 3rd degree polynomial for population density
+                  poly(median_age, 3) +               # 3rd degree polynomial for median age
+                  poly(aged_65_older, 3) +            # 3rd degree polynomial for aged 65 older
+                  poly(aged_70_older, 3) +            # 3rd degree polynomial for aged 70 older
+                  poly(gdp_per_capita, 3) +          # 3rd degree polynomial for GDP per capita
+                  poly(extreme_poverty, 3) +          # 3rd degree polynomial for extreme poverty
+                  poly(cardiovasc_death_rate, 3) +   # 3rd degree polynomial for cardiovascular death rate
+                  poly(handwashing_facilities, 3) +   # 3rd degree polynomial for handwashing facilities
+                  poly(life_expectancy, 3) +          # 3rd degree polynomial for life expectancy
+                  poly(human_development_index, 3),    # 3rd degree polynomial for human development index
+                  data = selected_columns)
+
+# Display the summary of the cubic model
+summary(cubic_model)
+
+```
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+
+# Ensure no NA values exist in the selected columns
+selected_columns <- na.omit(selected_columns)
+
+# Fit a polynomial regression model with quartic terms
+quartic_model <- lm(new_deaths_smoothed_per_million ~ 
+                    poly(population_density, 4) +        # 4th degree polynomial for population density
+                    poly(median_age, 4) +               # 4th degree polynomial for median age
+                    poly(aged_65_older, 4) +            # 4th degree polynomial for aged 65 older
+                    poly(aged_70_older, 4) +            # 4th degree polynomial for aged 70 older
+                    poly(gdp_per_capita, 4) +          # 4th degree polynomial for GDP per capita
+                    poly(extreme_poverty, 4) +          # 4th degree polynomial for extreme poverty
+                    poly(cardiovasc_death_rate, 4) +   # 4th degree polynomial for cardiovascular death rate
+                    poly(handwashing_facilities, 4) +   # 4th degree polynomial for handwashing facilities
+                    poly(life_expectancy, 4) +          # 4th degree polynomial for life expectancy
+                    poly(human_development_index, 4),    # 4th degree polynomial for human development index
+                    data = selected_columns)
+
+# Display the summary of the quartic model
+summary(quartic_model)
+
+```
+
+
+```{r}
+length(selected_columns)
+```
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+
+# Ensure no NA values exist in the selected columns
+selected_columns <- na.omit(selected_columns)
+
+# Fit a sixteenth-degree polynomial regression model
+tenth_degree_model <- lm(new_deaths_smoothed_per_million ~ 
+                             poly(population_density, 10) +        # 16th degree polynomial for population density
+                             poly(median_age, 10) +               # 16th degree polynomial for median age
+                             poly(aged_65_older, 10) +            # 16th degree polynomial for aged 65 older
+                             poly(aged_70_older, 10) +            # 16th degree polynomial for aged 70 older
+                             poly(gdp_per_capita, 10) +          # 16th degree polynomial for GDP per capita
+                             poly(extreme_poverty, 10) +          # 16th degree polynomial for extreme poverty
+                             poly(cardiovasc_death_rate, 10) +   # 16th degree polynomial for cardiovascular death rate
+                             poly(handwashing_facilities, 10) +   # 16th degree polynomial for handwashing facilities
+                             poly(life_expectancy, 10) +          # 16th degree polynomial for life expectancy
+                             poly(human_development_index, 10),    # 16th degree polynomial for human development index
+                             data = selected_columns)
+
+# Display the summary of the sixteenth-degree model
+summary(tenth_degree_model)
+
+```
+
+```{r}
+
+# Make predictions for each model
+linear_pred <- predict(linear_model, selected_columns)         # Predictions from the linear model
+quadratic_pred <- predict(quad_model, selected_columns)       # Predictions from the quadratic model
+cubic_pred <- predict(cubic_model, selected_columns)          # Predictions from the cubic model
+quartic_pred <- predict(quartic_model, selected_columns)      # Predictions from the quartic model
+tenth_degree_pred <- predict(tenth_degree_model, selected_columns) # Predictions from the 10th-degree model
+
+# Create a plot
+plot(selected_columns$new_deaths_smoothed_per_million, type = "p", 
+     xlab = "Index", 
+     ylab = "Total Deaths per Million", 
+     pch = 19, 
+     cex = 0.5, 
+     col = "grey", 
+     main = "Predictions from Linear and Polynomial Models")
+
+# Add predicted values to the plot
+lines(linear_pred, col = "red", lwd = 2)        # Linear model predictions
+lines(quadratic_pred, col = "blue", lwd = 2)    # Quadratic model predictions
+lines(cubic_pred, col = "orange", lwd = 2)      # Cubic model predictions
+lines(quartic_pred, col = "green", lwd = 2)     # Quartic model predictions
+lines(tenth_degree_pred, col = "purple", lwd = 2) # 10th-degree model predictions
+
+# Add a legend
+legend("topleft", 
+       legend = c("Data", "Predicted (linear)", "Predicted (quadratic)", 
+                  "Predicted (cubic)", "Predicted (quartic)", "Predicted (10th degree)"), 
+       lty = c(NA, 1, 1, 1, 1, 1), 
+       pch = c(19, NA, NA, NA, NA, NA), 
+       col = c("grey", "red", "blue", "orange", "green", "purple"), 
+       text.col = c("grey", "red", "blue", "orange", "green", "purple"))
+
+
+```
+
+```{r}
+
+# Split data into training and testing sets (80% training, 20% testing)
+set.seed(123)  # For reproducibility
+train_index <- createDataPartition(selected_columns$new_deaths_smoothed_per_million, p = 0.8, list = FALSE)
+train_data <- selected_columns[train_index, ]
+test_data <- selected_columns[-train_index, ]
+
+library(rpart)
+
+# Fit a decision tree model
+tree_model <- rpart(new_deaths_smoothed_per_million ~ ., data = train_data)
+
+# Make predictions
+tree_predictions <- predict(tree_model, newdata = test_data)
+
+# Calculate Mean Absolute Error
+mae_tree <- mean(abs(test_data$new_deaths_smoothed_per_million - tree_predictions))
+print(paste("Mean Absolute Error (Decision Tree):", mae_tree))
+
+# Calculate R-squared
+rsq_tree <- cor(test_data$new_deaths_smoothed_per_million, tree_predictions)^2
+print(paste("R-squared (Decision Tree):", rsq_tree))
+
+
+```
+
+What to say about these results
+
+## Section 4: Conclusions / answering the questions 
+
+
+
+is this dataset good for a clasification problem?
+are any of the datasets useful for this first assessment 
+binary classitifcation or cimple regression problem
+each member create a model that can be evaluated on left-out test data
+agree a performance metric e.g highest value 
+
+visualise 
+grasp whether this variable can be predicted - correlated / time series stuff 
+
+logistic regression
+decision tree 
+AIC 
+
+
+international mapping of the spread / demographic 
 
 
 
