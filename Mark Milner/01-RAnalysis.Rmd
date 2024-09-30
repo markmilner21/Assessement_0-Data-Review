@@ -13,14 +13,14 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Packages
 
 ```{r}
-install.packages("ggplot2") 
-install.packages("dplyr")
-install.packages("ggridges")
-install.packages(c("sf", "maps", "mapdata"))
-install.packages("viridis")
-install.packages("tidyr")
-install.packages("rpart")
-install.packages("caret")
+#install.packages("ggplot2") 
+#install.packages("dplyr")
+#install.packages("ggridges")
+#install.packages(c("sf", "maps", "mapdata"))
+#install.packages("viridis")
+#install.packages("tidyr")
+#install.packages("rpart")
+#install.packages("caret")
 ```
 
 ```{r}
