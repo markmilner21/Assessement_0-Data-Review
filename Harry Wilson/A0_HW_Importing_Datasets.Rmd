@@ -7,26 +7,48 @@ We want to obtain the data here:
 https://github.com/owid/covid-19-data/tree/master/public/data/hospitalizations
 
 
-```{r}
-base_path <- "C:/Users/markm/OneDrive/Documents/University/Year 4/dst/data"
 
-# Use file.path to create the full path to the CSV file
-csv_file_path <- file.path(base_path, "test_financial_dataset.csv")
+```{r}
+# Use the full path to the CSV file directly
+csv_file_path <- "/Users/harrywilson/Desktop/DataScienceToolbox/DataSets/covid-hospitalizations.csv"
 
 # Now read the CSV file
-data <- read.csv(csv_file_path)
-
-# View the first few rows of the dataset
-head(data)
+if (file.exists(csv_file_path)) {
+    data <- read.csv(csv_file_path)
+    head(data)
+} else {
+    print("File not found")
+}
 
 ```
+
+```{r}
+str(data)
+```
+```{r}
+# Print unique location names in the dataset
+unique_locations <- unique(data$entity)
+print(unique_locations)
+```
+
+
+
+
+
+```
+
 
 ```{python}
 import pandas as pd
 
-df = pd.read_csv(r"C:/Users/markm/OneDrive/Documents/University/Year 4/dst/data/test_financial_dataset.csv")
 
+# Update the file path
+df = pd.read_csv(r"/Users/harrywilson/Desktop/DataScienceToolbox/DataSets/covid-hospitalizations.csv")
+
+# Print the DataFrame
 print(df)
 
+
 ```
+
 
