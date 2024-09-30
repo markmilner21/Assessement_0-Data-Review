@@ -116,6 +116,8 @@ Ok so now we've got all of our data and loaded it into our R environment. We wan
 ```{r}
 us_data <- owid %>%
   filter(location == "United States")
+
+colnames(us_data)
 ```
 2. United Kingdom
 ```{r}
@@ -218,7 +220,6 @@ for (i in 1:nrow(selected_data)) {
 
 - death tolls 
 
-
 ```{r}
 # Load ggplot2
 library(ggplot2)
@@ -304,18 +305,10 @@ library(ggplot2)
 library(ggridges)
 
 
-#ggplot(selected_data, aes(x = date, y = location, height = new_cases_smoothed, fill = location, color=location)) +
- # geom_density_ridges(stat = "identity") +
-  #labs(title = "COVID-19 New Cases (Smoothed) by Country",
-   #    x = "Date",
-    #   y = "Country") +
-#  theme_minimal() +
-  theme(legend.position = "none")
-
 selected_data <- selected_data[!is.na(selected_data$new_cases_smoothed), ]  # Remove rows with NA
 
 # Step 3: Create the ridgeline plot
-ggplot(selected_data, aes(x = date, y = location, height = new_cases_smoothed, fill = location, color = location)) +
+ggplot(selected_data, aes(x = date, y = location, height = new_cases_smoothed, group=location, fill = location, color = location)) +
   geom_density_ridges(stat = "identity", scale = 5, rel_min_height = 0.01) +
   labs(title = "COVID-19 New Cases (Smoothed) by Country",
        x = "Date",
@@ -339,6 +332,7 @@ cases = ggplot(selected_data, aes(x = as.Date(date), y = new_cases_smoothed, col
        y = "New Cases (Smoothed)") +
   theme_minimal() +
   theme(legend.position = "none")  # Hide legend if not needed
+
 cases
 
 ```
