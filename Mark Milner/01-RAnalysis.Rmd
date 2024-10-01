@@ -1,0 +1,746 @@
+---
+title: "01-RAnalysis"
+author: "Mark Milner"
+date: "2024-09-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Packages
+
+```{r}
+#install.packages("ggplot2") 
+#install.packages("dplyr")
+#install.packages("ggridges")
+#install.packages(c("sf", "maps", "mapdata"))
+#install.packages("viridis")
+#install.packages("tidyr")
+#install.packages("rpart")
+#install.packages("caret")
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(ggridges)
+library(sf)
+library(maps)
+library(mapdata)
+library(viridis)
+library(tidyr)
+library(rpart)
+library(caret)
+```
+
+## Data Sources 
+
+1. Our World In Data (OWID) - available at https://github.com/owid/covid-19-data/tree/master/public/data
+
+2. COVID-19 Data Repository by the Center for Systems Science and Engineering (CSSE) at Johns Hopkins University - available at https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series
+
+Note, that whilst we access both of these datasets, our primary focus will be on the OWID dataset as it does not solely contain time series data (as JHU) but has more fields relevant to epidemiology such as countries' demographic makeups, vaccination information and hospitalization records. 
+
+## Section 1: Data Access 
+
+#### OWID 
+
+My DST toolbox directory is set up as follows:
+- dst
+  - data
+  - Github 
+    - Assessment 0
+  - workshops
+  
+all csv files containing the datasets are stored in my data folder within the dst folder
+
+```{r}
+
+data_path = "[replace with your path]/dst/data"
+
+our_world_in_data_path = file.path(data_path, "our_world_in_data_covid_data.csv")
+
+owid = read.csv(our_world_in_data_path)
+
+```
+
+We should now have managed to save the dataset in our working environment under the variable named "owid"
+
+```{r}
+head(owid)
+```
+  
+the head function gives us the first few lines of the dataset which allows us to see if our dataset has been correctly downloaded into our R environment. Using the dplyr package, we can manipulate our dataset to filter our columns. using the colnames function, we are able to view all the columns of the dataset. From here, we can proceed to filter the data based on any of these columns. In the below example, we filter based on location (in this case, we only want data from India). 
+
+```{r}
+library(dplyr)
+colnames(owid)
+india_data = filter(owid, location =="India")
+head(india_data)
+```
+  
+We can now fully access this dataset. 
+
+### Datasets from Center for Systems Science and Engineering (CSSE) at Johns Hopkins University
+
+the John Hopkins University provides comprehensive time series datasets for both confirmed cases and deaths from COVID-19 in the major cities of each state in the US. We will access the csv files from the GITHUB under the headings, "time_series_covid19_confirmed_US.csv" and "time_series_covid19_deaths_US.csv". Make sure to store this data in the data folder of your dst folder. 
+
+Importing into this R environment is done in a similar way as before. 
+
+```{r}
+JHU_confirmed = file.path(data_path, "time_series_covid19_confirmed_US.csv")
+JHU_deaths = file.path(data_path, "time_series_covid19_deaths_US.csv")
+
+JHU_c = read.csv(JHU_confirmed)
+JHU_d = read.csv(JHU_deaths)
+
+```
+
+```{r}
+head(JHU_c)
+```
+
+```{r}
+head(JHU_d)
+```
+  
+Hopefully, at this point, the reader should be able to view the first few columns that display Alabama's recorded statistics. 
+
+## Section 2: Exploratory Data Analysis.
+
+We now hope to explore our datasets. The purpose of this assessment is to establish whether this dataset would be suitable for a categorization or regression problem. Later into my analysis, I hope to establish a regression problem using the OWID dataset and so this section is a necessary step to understanding the makeup of the dataset as well doing any structural changes that might be necessary. 
+
+R was having some problems with the structure of the date column in the OWID dataset so we were therefore required to adapt it slightly. There are several in-built methods that are designed to automate this process (such as as.Date()) but I chose to do this manually. This may take a minute or two to run.
+
+```{r}
+for (i in 1:nrow(owid)) {
+  day = substring(owid$date[i],1,2)
+  month = substring(owid$date[i],4,5)
+  year = substring(owid$date[i],7,10)
+  new_format = paste(year, month, day, sep = "-") 
+  #print(new_format)
+  owid$date[i] = new_format
+}
+  #print(as.Date(selected_data$date[i], "%d/%m/%y"))
+ # selected_data$date[i] = as.Date(selected_data$date[i], "%d/%m/%y")
+
+
+```
+
+
+As mentioned before, we can filter data using the filter function from the dplyr package. 
+
+```{r}
+us_data <- owid %>%
+  filter(location == "United States")
+head(us_data)
+```
+
+Above is all the data stored in this dataset relevant to the US. 
+
+We can also list all the column headings using the colnames() function.
+
+```{r}
+colnames(us_data)
+```
+
+
+```{r}
+for (i in 1:nrow(us_data)) {
+  cat("Date:", us_data$date[i], "- Total Deaths:", us_data$total_deaths[i], "\n")
+  break   # remove for list
+}
+
+```
+
+
+Some of our data exploration will require us to select a handful of countries to analyse in further depth. This is predominantly due to the fact that any graphical analysis will be overcrowded if we choose to keep all countries involved. For that reason, we will select the following countries to include in this section of our analysis. 
+
+1. United States
+2. United Kingdom
+3. Brazil
+4. Germany 
+5. Japan
+6. India
+7. Australia
+
+```{r}
+# Define the selected countries
+selected_countries <- c("United States", "United Kingdom", "Brazil", "Germany", "Japan", "India", "Australia")
+
+# Step 1: Filter the dataset for these countries
+selected_data <- owid[owid$location %in% selected_countries, ]
+
+# Check the first few rows of the filtered dataset
+head(selected_data)
+```
+
+### Exploring some key epidemiological metrics:
+
+1. Death Tolls
+
+```{r}
+# Create the plot - this plot has too much data and is weird / not very representative of anything
+ggplot(owid, aes(x = date, y = total_deaths)) +
+  geom_point(color = "blue") +  # Add points
+  labs(x = "Date", y = "Total Deaths", title = "Total Death Count Over Time") +
+  theme_minimal()
+
+```
+
+Clearly, there is a problem with this plot which makes it very hard to interpret and make sense of. A quick Google search told me I had to include a group parameter in the aesthetic mapping construction to fix this problem. 
+
+```{r}
+ggplot(selected_data, aes(x = date, y = total_deaths, group=location, color=location)) +
+  geom_line() +
+  labs(title = "Total Deaths over Time", x = "Date", y = "Total Deaths") +
+  theme_minimal()
+```
+
+Unsurprisingly, countries with larger populations seem to have larger death counts but lets normalise these figures as a percentage of their total population. To do this, we can use the total_deaths_per_million column as opposed to the total_deaths column. 
+
+```{r}
+ggplot(selected_data, aes(x = date, y = total_deaths_per_million, group=location, color=location)) +
+  geom_line() +
+  labs(title = "Total Deaths (per million) over Time", x = "Date", y = "Total Deaths") +
+  theme_minimal()
+
+```
+
+Now we get a much more representative plot of the rate of death due to covid in these selected countries per capita. The last problem we seem to be having is the x-axis labels. since we have daily time-series data, many dates are labelling over eachother and we are left with a long grey solid line on our axis. We'll change this by only adding a date every 6 months.
+
+```{r}
+ggplot(selected_data, aes(x = as.Date(date), y = total_deaths_per_million, group=location, color=location)) +
+  geom_line() +
+  labs(title = "Total Deaths (per million) over Time", x = "Date", y = "Total Deaths") +
+  scale_x_date(date_breaks = "12 months", date_labels = "%b %Y") +
+  theme_minimal()
+```
+
+2. The rate of spread
+
+Rate of spread is an important epidemiological factor. We will approximate the rate of spread in each country by considering the number of new cases daily.  
+
+the column new_cases_smoothed typically refers to the smoothed average of new COVID-19 cases over a period of days, often 7 days. It's used to remove day-to-day fluctuations in case counts, which could be a result of inconsistent reporting. 
+
+```{r}
+#https://r-statistics.co/Top50-Ggplot2-Visualizations-MasterList-R-Code.html#6.%20Change
+
+cases = ggplot(selected_data, aes(x = as.Date(date), y = new_cases_smoothed, color = location, group=location)) +
+  geom_line() +
+  facet_wrap(~ location, scales = "free_y") +  # Create small multiples by location
+  labs(title = "Smoothed New COVID-19 Cases Over Time by Country",
+       x = "Date",
+       y = "New Cases (Smoothed)") +
+  theme_minimal() +
+  theme(legend.position = "none")  
+
+cases
+```
+
+Here, We've plotted the smoothed case counts for each country. Using this, we can see when the virus spiked in each country, how long for and how quickly it was dealt with by their respective health services.
+
+If we want to, we can also overlay this data onto one singular graph:
+
+```{r}
+stacked_data <- selected_data %>%
+  group_by(date, location) %>%
+  summarise(total_cases = sum(new_cases_smoothed, na.rm = TRUE), .groups = 'drop')
+# here we want to remove any missing data i.e. N/A terms using the na.rm (NA remove) parameter
+
+# Create stacked area plot
+stacked_area_plot <- ggplot(stacked_data, aes(x = as.Date(date), y = total_cases, fill = location)) +
+  geom_area(alpha = 0.5) +  # Adjust alpha for transparency
+  labs(title = "Stacked Area Chart of COVID-19 New Cases Over Time",
+       x = "Date",
+       y = "Total New Cases") +
+  theme_minimal() +
+  theme(legend.position = "right")  
+
+print(stacked_area_plot)
+
+```
+
+3. Case count vs Mortality rate (where death has been attributed to covid)
+
+This is an intuitively important comparison; comparing the number of cases of the virus against the number of deaths. We'll plot a scatter graph
+
+```{r}
+
+scatter_plot <- ggplot(selected_data, aes(x = total_cases, y = total_deaths, color = location)) +
+  geom_point(size = 2, alpha = 0.7) +  # Adjust point size and transparency
+  labs(title = "COVID-19 Cases vs Deaths by Country",
+       x = "Total Cases",
+       y = "Total Deaths",
+       color = "Country") +
+  theme_minimal()
+
+print(scatter_plot)
+
+```
+
+Unsurprisingly, the US has the most cases and the largest number of deaths with less populated countries like Australia having less cases and inherently less deaths. Again lets plot the same graph but normalise the figures to account for population variation.
+
+```{r}
+scatter_plot <- ggplot(selected_data, aes(x = total_cases_per_million, y = total_deaths_per_million, color = location)) +
+  geom_point(size = 2, alpha = 0.7) +  # Adjust point size and transparency
+  labs(title = "COVID-19 Cases vs Deaths by Country (per million)",
+       x = "Total Cases (per million)",
+       y = "Total Deaths (per million)",
+       color = "Country") +
+  theme_minimal()
+
+print(scatter_plot)
+
+```
+Now our plot looks different. Now Brazil looks the worst off with some of the lowest case figures but some of the highest total death figures (per million). 
+
+4. demographic factors against final death toll (per million)
+
+We are now going to analyse the relationship between several different demographic factors and the final death toll as intuitively, one might expect that there is a positive correlation between these statistics. We see that total death count is a cumulative value and so we want to calculate the final death count provided by the data set which is easily done as we just select the most recent total_deaths_per_million value provided by that country. 
+
+Again, to avoid any missing value error messages, we'll remove any missing data from the data we use.
+
+the demographic factors we shall consider are:
+
+1. HDI (human development index)
+2. Hand washing facilities
+3. population density
+
+```{r}
+# Summarize data to include hand washing facilities, population density, and HDI
+final_death_counts <- owid %>%
+  group_by(location) %>%
+  filter(date == max(date, na.rm = TRUE)) %>% # remove missing val rows
+  summarise(final_death_toll_per_million = max(total_deaths_per_million, na.rm = TRUE), 
+            HDI = human_development_index,
+            handwashing_facilities = handwashing_facilities,  
+            population_density = population_density,  
+            .groups = 'drop') %>%
+  filter(!is.na(handwashing_facilities) & !is.na(population_density) & !is.na(HDI))  # Remove NA values
+
+# Display the updated final death counts for each country and the demographic factors
+print(final_death_counts)
+
+
+```
+Now we have made a final death count table with the country location, the death toll per million and the human development index value i.e. all the necessary information we need. 
+
+```{r}
+
+# Create the scatter plot
+scatter_plot <- ggplot(final_death_counts, aes(x = HDI, y = final_death_toll_per_million, color = location)) +
+  geom_point(size = 3, alpha = 0.7) +  # Adjust point size and transparency
+  labs(title = "COVID-19 Deaths per million vs human development index by Country",
+       x = "HDI",
+       y = "Total Deaths (per million)",
+       color = "Country") +
+  theme_minimal() +  # Use a minimal theme for a clean look
+  theme(legend.position = "none")  # Position the legend to the right
+
+# Display the scatter plot
+print(scatter_plot)
+```
+```{r}
+library(ggplot2)
+
+# Create the scatter plot
+scatter_plot <- ggplot(final_death_counts, aes(x = handwashing_facilities, y = final_death_toll_per_million, color = location)) +
+  geom_point(size = 3, alpha = 0.7) +  # Adjust point size and transparency
+  labs(title = "COVID-19 Deaths per million vs handwashing facilities by Country",
+       x = "Handwashing Facilities (% of total population)",
+       y = "Total Deaths (per million)",
+       color = "Country") +
+  theme_minimal() +  # Use a minimal theme for a clean look
+  theme(legend.position = "none")  # Position the legend to the right
+
+# Display the scatter plot
+print(scatter_plot)
+
+```
+
+
+```{r}
+library(ggplot2)
+
+# Create the scatter plot
+scatter_plot <- ggplot(final_death_counts, aes(x = population_density, y = final_death_toll_per_million, color = location)) +
+  geom_point(size = 3, alpha = 0.7) +  # Adjust point size and transparency
+  labs(title = "COVID-19 Deaths per million vs Population density by Country",
+       x = "Population density",
+       y = "Total Deaths (per million)",
+       color = "Country") +
+  theme_minimal() +  # Use a minimal theme for a clean look
+  theme(legend.position = "none")  # Position the legend to the right
+
+# Display the scatter plot
+print(scatter_plot)
+```
+  
+the general structure of some of these plots may come as somewhat of a surprise. For example, countries with higher HDI values generally appear to have larger death counts. A similar notion goes for countries with higher handwashing facilities percentages. A possible explanation for this could be that the countries with lower HDI values / handwashing facilities are generally poorer and have less facilities for figure and covid rate collection and so their reported figures are not accurate. 
+5. The basic reproduction number (SIR model)
+
+The basic reproduction number is an important epidemiological metric that indicates the average number of secondary infections produced by one infected individual in a fully susceptible population. Fortunately, we don't have to calculate this based off data from the dataset as it is actually provided as a metric within the dataset. 
+
+```{r}
+for (i in 1:nrow(owid)) {
+  cat("Country:", owid$location[i], "- Reproduction rate:", owid$reproduction_rate[i], "\n")
+  break # remove for list
+}
+```
+  
+#### A quick overview of JHU data
+
+We are going to have a brief look into the JHU datasets we downloaded. Whilst we won't focus on this for the majority of this section, we can design some interesting plots that could be useful in the future. 
+
+
+```{r}
+
+# Create cumulative death toll dataset
+cumulative_death_toll <- JHU_d %>%
+  group_by(Province_State) %>%  # Group by state
+  summarise(total_deaths = sum(X3.9.23, na.rm = TRUE))  # Sum deaths for each state
+
+cumulative_case_toll <- JHU_c %>%
+  group_by(Province_State) %>%  # Group by state
+  summarise(total_cases = sum(X3.9.23, na.rm = TRUE))  # Sum deaths for each state
+
+# Display the resulting dataset
+print(head(cumulative_death_toll))
+print(head(cumulative_case_toll))
+
+
+```
+
+Here, we have simply collected all the data for each state and summed these values to get a total tally of death and case counts for each state. We can use this to design a heatmap that displays the case and death count of each state based on a colour key.
+
+```{r}
+# Load US state map data
+states_map <- map_data("state") 
+
+cumulative_death_toll$state <- tolower(cumulative_death_toll$Province_State)
+
+# Merge the map data with the cumulative death toll data
+map_data_with_deaths <- states_map %>%
+  left_join(cumulative_death_toll, by = c("region" = "state"))
+
+# Create the choropleth map
+choropleth_map_deaths <- ggplot(map_data_with_deaths, aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = total_deaths), color = "black", linewidth = 0.1) +
+  scale_fill_viridis(option = "C", direction = -1, na.value = "grey") +  # Color scale
+  labs(title = "COVID-19 Total Death Toll by State in the USA",
+       fill = "Total Deaths") +
+  theme_minimal()
+
+print(choropleth_map_deaths)
+
+```
+
+```{r}
+# Load US state map data
+states_map <- map_data("state") 
+
+cumulative_case_toll$state <- tolower(cumulative_case_toll$Province_State)
+
+# Merge the map data with the cumulative case toll data
+map_data_with_cases <- states_map %>%
+  left_join(cumulative_case_toll, by = c("region" = "state"))
+
+# Create the choropleth map for cases
+choropleth_map_cases <- ggplot(map_data_with_cases, aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = total_cases), color = "black", linewidth = 0.1) +
+  scale_fill_viridis(option = "C", direction = -1, na.value = "grey") +
+  labs(title = "COVID-19 Total Case Toll by State in the USA",
+       fill = "Total Cases") +
+  theme_minimal()
+
+print(choropleth_map_cases)
+
+```
+We now want to plot a scatter graph to assess the correlation between total cases and total deaths per state 
+
+```{r}
+# Ensure both datasets have lower case state names for merging
+cumulative_case_toll$state <- tolower(cumulative_case_toll$Province_State)
+cumulative_death_toll$state <- tolower(cumulative_death_toll$Province_State)
+
+# Merge datasets on state
+combined_data <- cumulative_case_toll %>%
+  select(state, total_cases) %>%  # Select only necessary columns
+  left_join(cumulative_death_toll %>% select(state, total_deaths), by = "state")
+
+# Create the scatter plot without a legend
+scatter_plot <- ggplot(combined_data, aes(x = total_cases, y = total_deaths)) +
+  geom_point(aes(color = state), size = 3, alpha = 0.7, show.legend = FALSE) +  # No legend
+  labs(title = "COVID-19 Total Cases vs Total Deaths by State",
+       x = "Total Cases",
+       y = "Total Deaths") +
+  theme_minimal()
+
+# Display the scatter plot
+print(scatter_plot)
+
+```
+A quick implementation of a linear regression model can be implemented to model total_deaths with a single explanatory variable, total_cases
+
+```{r}
+linear_model <- lm(total_deaths ~ total_cases,
+                    data = combined_data) 
+summary(linear_model)
+```
+Notice this is a decent regression model with a high R-squared value. This indicates that 94.92% of the variability in total_deaths is explained by the model. This suggests a very strong fit, meaning that the variables included in the model (total_cases) are good predictors of total_deaths. The regression line is shown below
+
+```{r}
+templmpred <- predict(linear_model,combined_data)
+
+plot(combined_data$total_cases,combined_data$total_deaths,xlab="cases",ylab="deaths",pch=19,cex=0.5,col="black")
+#line creates a scatter plot of the Monthly Anomaly (MA) against Time. 
+
+lines(combined_data$total_cases,templmpred,col="red",lwd=2)
+```
+
+## Section 2: Desigining a simple regression problem 
+
+We will now decide on a regression problem.
+
+### Outlining our problem 
+
+Given my focus is on the general epidemology, it seems natural to do something related to death tolls and demographic factors. In the OWID dataset, there are multiple demographic factors that we will use in our model as potential explanatory variables. These demographic factors we will include are:
+
+1. Population Density
+2. Median Age
+3. aged_65_older
+4. aged_70_older
+5. gdp_per_capita
+6. extreme_poverty
+7. cardiovasc_death_rate
+8. handwashing facilities
+9. life_expectancy
+10. human_development_index
+
+We will be attempting to predict the new_deaths_smoothed_per_million. First things first, let us organise our data so that we have all that we need in one place.
+
+```{r}
+
+# Select relevant columns from the OWID dataset
+selected_columns <- owid %>%
+  select(location, total_deaths_per_million,new_deaths_smoothed_per_million, population_density, median_age, 
+         aged_65_older, aged_70_older, gdp_per_capita, extreme_poverty, 
+         cardiovasc_death_rate, handwashing_facilities, life_expectancy, 
+         human_development_index)
+
+# Remove rows with missing total_deaths_per_million
+selected_columns <- selected_columns %>%
+  filter(!is.na(new_deaths_smoothed_per_million))
+
+print(head(selected_columns))
+
+```
+
+### Choice of Model
+
+We have decided to to run both linear and polynomial regression algorithms on our problem. We will also test one machine learning decision tree algorithm. 
+
+#### Linear Regression model
+
+
+```{r}
+linear_model <- lm(new_deaths_smoothed_per_million ~ population_density + 
+                      median_age + 
+                      aged_65_older + 
+                      aged_70_older + 
+                      gdp_per_capita + 
+                      extreme_poverty + 
+                      cardiovasc_death_rate + 
+                      handwashing_facilities + 
+                      life_expectancy + 
+                      human_development_index,
+                    data = selected_columns)  
+
+
+summary(linear_model)
+```
+Evidently, this is not a great model. We see that the R-squared value is incredibly low indicates that only about 11% of the variability in new_deaths is explained by the model. This suggests a very weak fit, meaning that the variables included in the model are not great predictors of diamond price. Having said that, since the Adjusted R-squared is almost the same as the R-squared, it indicates that the number of predictors in the model is appropriate and that the model is not overfitting.
+
+Additionally, with such a high F-statistic and an extremely small p-value, we can conclude that at least one of the predictors is significantly related to new_deaths_smoothed_per_million. In-fact many of the p-values are incredibly low and thus statistically significant (such as median_age or life_expectancy) whilst others arent (handwashing_facilites or extreme_poverty)
+
+#### Polynomial Regression model
+
+```{r}
+# Ensure no NA values exist in the selected columns
+selected_columns <- na.omit(selected_columns)
+
+# Fit a polynomial regression model
+quad_model <- lm(new_deaths_smoothed_per_million ~ 
+                 poly(population_density, 2) +       
+                 poly(median_age, 2) +              # 2nd degree polynomial for median age
+                 poly(aged_65_older, 2) +           
+                 poly(aged_70_older, 2) +           
+                 poly(gdp_per_capita, 2) +         
+                 poly(extreme_poverty, 2) +         
+                 poly(cardiovasc_death_rate, 2) +  
+                 poly(handwashing_facilities, 2) +  
+                 poly(life_expectancy, 2) +         
+                 poly(human_development_index, 2),  
+                 data = selected_columns)
+
+# Display the summary of the polynomial model
+summary(quad_model)
+
+```
+Here, we have a similar result to our linear regression model with a slightly higher R-squared value. The same conclusions can therefore be drawn. In fact, as we increased the order of our regression polynomial models, whilst the R-squared value did seem to increase, it was not a significant amount worth noting. 
+
+```{r}
+
+# Ensure no NA values exist in the selected columns
+selected_columns <- na.omit(selected_columns)
+
+tenth_degree_model <- lm(new_deaths_smoothed_per_million ~ 
+                             poly(population_density, 10) +        
+                             poly(median_age, 10) +               
+                             poly(aged_65_older, 10) +           
+                             poly(aged_70_older, 10) +            
+                             poly(gdp_per_capita, 10) +          
+                             poly(extreme_poverty, 10) +          
+                             poly(cardiovasc_death_rate, 10) +   
+                             poly(handwashing_facilities, 10) +  
+                             poly(life_expectancy, 10) +         
+                             poly(human_development_index, 10),   
+                             data = selected_columns)
+
+summary(tenth_degree_model)
+
+```
+
+Let's now display these results on a plot 
+
+```{r}
+
+# Make predictions for each model
+linear_pred <- predict(linear_model, selected_columns)         # Predictions from the linear model
+quadratic_pred <- predict(quad_model, selected_columns)       # Predictions from the quadratic model
+tenth_degree_pred <- predict(tenth_degree_model, selected_columns) # Predictions from the 10th-degree model
+
+# Create a plot
+plot(selected_columns$new_deaths_smoothed_per_million, type = "p", 
+     xlab = "Index", 
+     ylab = "Total Deaths per Million", 
+     pch = 19, 
+     cex = 0.5, 
+     col = "grey", 
+     main = "Predictions from Linear and Polynomial Models")
+
+# Add predicted values to the plot
+lines(linear_pred, col = "red", lwd = 2)        # Linear model predictions
+lines(quadratic_pred, col = "blue", lwd = 2)    # Quadratic model predictions
+lines(tenth_degree_pred, col = "purple", lwd = 2) # 10th-degree model predictions
+
+# Add a legend
+legend("topleft", 
+       legend = c("Data", "Predicted (linear)", "Predicted (quadratic)", "Predicted (10th degree)"), 
+       lty = c(NA, 1, 1, 1, 1, 1), 
+       pch = c(19, NA, NA, NA, NA, NA), 
+       col = c("grey", "red", "blue", "purple"), 
+       text.col = c("grey", "red", "blue", "purple"))
+
+
+```
+Clearly, it is quite evident from the plot that the models generated were not good fits and that the demographic explanatory variables were not sufficient in explaining the variability of the dependent variable. 
+
+#### Decision-tree model
+
+We decided to introduce a Decision-tree model with some cross-validation
+
+```{r}
+
+# Split data into training and testing sets (80% training, 20% testing)
+set.seed(123)  
+train_index <- createDataPartition(selected_columns$new_deaths_smoothed_per_million, p = 0.8, list = FALSE)
+train_data <- selected_columns[train_index, ]
+test_data <- selected_columns[-train_index, ]
+
+# Fit a decision tree model with all of the previous models
+tree_model <- rpart(new_deaths_smoothed_per_million ~ ., data = train_data)
+
+# Make predictions
+tree_predictions <- predict(tree_model, newdata = test_data)
+
+# Calculate Mean Absolute Error
+mae_tree <- mean(abs(test_data$new_deaths_smoothed_per_million - tree_predictions))
+print(paste("Mean Absolute Error (Decision Tree):", mae_tree))
+
+# Calculate R-squared
+rsq_tree <- cor(test_data$new_deaths_smoothed_per_million, tree_predictions)^2
+print(paste("R-squared (Decision Tree):", rsq_tree))
+
+
+```
+Here, our R-squared model performed equally as poorly as our linear and polynomial regression models. I suspect that whilst choice of model may be relevant in the quality of our result, the choice of explanatory variables is more responsible for the low R-squared scores. 
+
+#### Why new_deaths_smoothed_per_million?
+
+I wanted to include this section after playing around with the linear models to see if I could obtain a better result. Having changed my dependent variable from new_deaths_smoothed_per_million to total_deaths_per_million, my R-squared value was much greater and the model appeared to have a higher statistical signifcance. For example, running a simple linear regression as before but changing the dependent variable as mentioned gave the following results summary:
+
+```{r}
+linear_model <- lm(total_deaths_per_million ~ population_density + 
+                      median_age + 
+                      aged_65_older + 
+                      aged_70_older + 
+                      gdp_per_capita + 
+                      extreme_poverty + 
+                      cardiovasc_death_rate + 
+                      handwashing_facilities + 
+                      life_expectancy + 
+                      human_development_index,
+                    data = owid)  
+
+
+summary(linear_model)
+```
+
+Similarly, with the polynomial of degree 10 model:
+
+```{r}
+selected_columns <- na.omit(selected_columns)
+
+tenth_degree_model <- lm(total_deaths_per_million ~ 
+                             poly(population_density, 10) +        
+                             poly(median_age, 10) +               
+                             poly(aged_65_older, 10) +           
+                             poly(aged_70_older, 10) +            
+                             poly(gdp_per_capita, 10) +          
+                             poly(extreme_poverty, 10) +          
+                             poly(cardiovasc_death_rate, 10) +   
+                             poly(handwashing_facilities, 10) +  
+                             poly(life_expectancy, 10) +         
+                             poly(human_development_index, 10),   
+                             data = selected_columns)
+
+summary(tenth_degree_model)
+
+```
+
+These models appear to perform much better. However, I thought that using total_deaths_per_million did not make intuitive sense. Total deaths per million is a cumulative metric i.e. accumulates over time. When used in a time-series context where we are modelling how these demographic factors can estimate the dependent variable, this could cause a problem. For instance, suppose the model reads a row from the dataset from 2023 for country A, the last entry for that country and therefore its largest cumulative total deaths count. It then reads the next row from the dataset, the first for country B, where its cumulative total deaths count is at 0. 
+
+The regression model, seeing a high number of total deaths for Country A and a low number for Country B, will attempt to explain the difference using the predictor variables (e.g., GDP, HDI, life expectancy). Since time is not included in the model, the model might falsely attribute the difference in deaths to these demographic factors, when the true cause of the difference is that Country A has simply been dealing with the pandemic for a longer time. This leads to incorrect coefficients being estimated for those demographic factors, because the model is confusing time-related differences with demographic differences.
+
+For this reason, I chose to make the dependent variable new_deaths_smoothed_per_million as this value is not a cumulative metric thus attempting to mitigate the risk of misinterpretation associated with cumulative totals within the time-series data.
+
+## Section 4: Conlusions
+
+We were able to explore and analyse the dataset successfully where only a few preprocessing steps were necessary before constructing predictive models such as restructuring of the date column and the removal of those rows with missing information. 
+
+We were largely unsuccessful in our model applications. Whilst we saw some improvement from linear models to polynomial models, with higher orders achieving slightly higher R^2 values, all models implimented did not appear to explain the variation in the dependent variable. Perhaps this was due to the fact that most of the demographic factors were largely static and not updated over time as the other variables were.
+
+## Section 5: References
+
+https://www.rdocumentation.org/packages/dplyr/versions/1.0.10/topics/filter - r documentation on how to use the filter function
+
+https://r-graph-gallery.com/#:~:text=The%20R%20Graph%20Gallery%20boasts%20the%20most%20extensive%20compilation%20of - showed me a range of plots to visualise the data
+
+https://r-statistics.co/Top50-Ggplot2-Visualizations-MasterList-R-Code.html?utm_content=cmp-true - showed me a range of plots to visualise the data
+
+http://sthda.com/english/wiki/ggplot2-line-plot-quick-start-guide-r-software-and-data-visualization#google_vignette - a guide to the ggplot2 package
