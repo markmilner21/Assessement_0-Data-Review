@@ -19,7 +19,7 @@ For this project, both R and Python are used. Below are the instructions for set
 
 All additional packages required for R are listed in RReqs.r
 
-All additional packages for Python will be listed in 
+All additional packages for Python will be listed in PythonReqs.py
 
 ### Evidence 
 

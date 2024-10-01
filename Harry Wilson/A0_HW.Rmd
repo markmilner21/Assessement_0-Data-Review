@@ -4,42 +4,92 @@ output: html_document
 ---
 
 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Packages 
+
+
+
+```{r}
+#install.packages("ggplot2")
+#install.packages("dplyr")
+#install.packages("reshape2")
+#install.packages("lubridate")
+#install.packages("tidyr")
+```
+
+
+
+```{r message=FALSE, warning=FALSE}
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+library(lubridate)
+library(tidyr)
+```
+
+
+
 ## Introduction
+
+
 
 In the following code we analyse COVID-19 hospitalisation data within the UK and across the world. We aim to look for any relations between the data through the code we find, and seeing how we can improve our findings to give us more insight into how the global pandemic affected healthcare facilities worldwide.
 
 
-The following pre-requisites are required:
-```{r}
-library(ggplot2)
-library(plyr)
-library(dplyr)
-library(tidyr)
-library(reshape2)
-library(lubridate)
-```
+
+## Data Source
 
 
-## Instructions for importing the dataset
 
 1. The first dataset is here: https://ourworldindata.org/covid-hospitalizations
 2. You can find a link to the CSV file on Our World in Data's GitHub here, called 'covid-hospitalizations.csv': https://github.com/owid/covid-19-data/tree/master/public/data/hospitalizations
 3. Save this file to your desired location, under the file-name 'covid-hospitalizations.csv'
 
+## Section 1: Data Access
 
 
-## Exploratory Data Analaysis
+```{r}
+## For the reader
+
+#data_path = "[replace with your path]"
+
+#hosp_path = file.path(data_path, "covid-hospitalizations.csv")
+
+#data = read.csv(hosp_path)
+```
 
 
 
-### Initial Analaysis
+```{r}
+## For the author
+
+data <- read.csv("/Users/harrywilson/Desktop/DataScienceToolbox/DataSets/covid-hospitalizations.csv")
+```
+
+
+
+```{r}
+head(data)
+```
+
+
+
+This allows us to check if our dataset has been installed correctly, as if it has we should see the first few rows and columns of our dataset.
+
+## Section 2: Exploratory Data Analysis
+
+
 
 In this section we will complete an first analysis to see how different countries across the world coped.
 
-```{r}
-# Read the dataset
-data <- read.csv("/Users/harrywilson/Desktop/DataScienceToolbox/DataSets/covid-hospitalizations.csv")
 
+
+```{r}
 # Select only the relevant columns
 data$date <- as.Date(data$date)
 icu_data <- data %>%
@@ -57,22 +107,13 @@ ggplot(icu_data, aes(x = date, y = value)) +
 
 
 
-##### A brief look
+In this first graph, we are looking at all the countries in our data set and their sum of ICU (Intensive Care Unit) occupancies throughout the pandemic and the year that follows. I want to filter our data into only selected countries, as this data looks at 50 countries, and at the moment we don't even have a list of them. So this isn't too informative aside from looking at general trends across the globe. However, we can see the ICU rates have dropped massively since their last peak in the early months of 2022. Instead, we choose to look at France, Portugal and England to see how they coped individually.
 
-In this first graph, we are looking at all the countries in our data set and their sum of ICU (Intensive Care Unit) occupancies throughout the pandemic and the year that follows. I want to filter our data into only selected countries, as this data only looks at 50 countries, and at the moment we don't even have a list of them. So this isn't too informative aside from looking at general trends across the globe. Which we can see the ICU rates have dropped massively since their last peak in the early months of 2021.
+
 
 ```{r}
-library(ggplot2)
-library(dplyr)
-
-# Read the dataset
-data <- read.csv("/Users/harrywilson/Desktop/DataScienceToolbox/DataSets/covid-hospitalizations.csv")
-
-# Convert date column to Date type
-data$date <- as.Date(data$date)
-
 # Select only relevant columns and filter for specific locations
-selected_locations <- c("England", "France", "Portugal")  # Replace with your desired countries
+selected_locations <- c("England", "France", "Portugal")  
 
 icu_data <- data %>%
     filter(indicator == "Daily ICU occupancy", entity %in% selected_locations) %>%
@@ -83,34 +124,19 @@ ggplot(icu_data, aes(x = date, y = value, color = entity)) +
     geom_line() +
     labs(title = "Daily ICU Occupancy Over Time",
          x = "Date",
-         y = "Daily ICU Occupancy") +
+         y = "Daily ICU Occupancy",
+         color = "Countries")+
     theme_minimal()
 
 ```
 
 
 
-#### A more focused look
-
-From this graph, we can see that each ICU occupation rate in each of the countries followed a similar pattern, by looking at the peaks and troughs. However, the problem here is that clearly our different locations have different populations. So it is not really a fair insight into how each country was doing. We can look at this more fairly by instead looking at "ICU Deaths Per Million" of each of these populations.
-
-
+From this graph, we can see that each ICU occupation rate in each of the countries followed a similar pattern, by looking at the peaks and troughs. However, the problem here is that our different locations have different populations. So it is not really a fair insight into how each country was doing. We can look at this more fairly by instead looking at "ICU Deaths Per Million" of each of these populations.
 
 
 
 ```{r}
-library(ggplot2)
-library(dplyr)
-
-# Read the dataset
-data <- read.csv("/Users/harrywilson/Desktop/DataScienceToolbox/DataSets/covid-hospitalizations.csv")
-
-# Convert date column to Date type
-data$date <- as.Date(data$date)
-
-# Select only relevant columns and filter for specific locations
-selected_locations <- c("England", "France", "Portugal")  # Replace with your desired countries
-
 icu_data <- data %>%
     filter(indicator == "Daily ICU occupancy per million", entity %in% selected_locations) %>%
     select(date, entity, value)
@@ -120,21 +146,21 @@ ggplot(icu_data, aes(x = date, y = value, color = entity)) +
     geom_line() +
     labs(title = "Daily ICU Occupancy per Million Over Time",
          x = "Date",
-         y = "Daily ICU Occupancy per Million") +
+         y = "Daily ICU Occupancy per Million",
+         color = "Countries") +
     theme_minimal()
 
 ```
 
 
 
-#### Beds per million analysis
-
-We can see that each oc the countries, France initially struggled the most, doubliung Englands ICU occupancy per million. This shows how much of a strain they were under, which is backed up by the article [1]. We see England coped okay relatively, however Portugal was also put under a lot of strain in early 2021, again backed up by [2]
+We can see that each of the countries, France initially struggled the most, doubling Englands ICU occupancy per million. This shows how much of a strain they were under. We see England coped okay relatively, however Portugal was also put under a lot of strain in early 2021.
 
 
 
+#### Digging a bit deeper
 
-### Looking in depth
+
 
 We will look at the different countries we can analyse in this dataset, along with what there is to analyse in the set.
 
@@ -149,13 +175,11 @@ print(unique_indicators)
 
 
 
-###### Analysis 2 can be on finding if there is any relation (regression?) between daily icu occupancy and daily hospital occupancy, would expect to find that there is, but not a constant one due to the introduction of vaccines
+Here, we will explore if there is any relation between Daily ICU Occupancy and Daily Hospital Occupancy in England. First, we start off with a basic heat map to see if our hypothesis, that they will be correlated, seems to be correct.
 
 
 
 ```{r}
-# Assuming your dataset is already loaded as 'data'
-
 # Filter for 'England' and for the relevant indicators
 england_data <- data %>%
     filter(entity == "England", 
@@ -168,10 +192,6 @@ england_wide <- england_data %>%
 # Calculate correlation matrix
 cor_matrix <- cor(england_wide[, c("Daily ICU occupancy", "Daily hospital occupancy")], use = "complete.obs")
 
-# Load the necessary libraries
-library(ggplot2)
-library(reshape2)
-
 # Melt the correlation matrix to long format for heatmap plotting
 cor_melt <- melt(cor_matrix)
 
@@ -181,25 +201,18 @@ ggplot(cor_melt, aes(Var1, Var2, fill = value)) +
     scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0) +
     labs(title = "Correlation between Daily ICU and Hospital Occupancy in England",
          fill = "Correlation") +
-    theme_minimal()
+    theme_minimal() +
+    theme(plot.title = element_text(size = 12, hjust = 0.5),  
+          plot.title.position = "plot")  
 ```
 
 
-### A first heatmap
 
-From this, we can see there is a clear correlation between Daily ICU Occupancy and Daily Hospital Admissions, which was to be expected. I am now intrigued to see if this relation stays as strong throughout the pandemic within England.
+From this first heat map we can see there is a clear correlation between Daily ICU Occupancy and Daily Hospital Admissions, which was to be expected. I am now intrigued to see if this relation stays as strong throughout the pandemic within England. So we look at months individually from within the pandemic, as opposed to an average of all of our data within England.
+
 
 
 ```{r}
-# Load required libraries
-library(ggplot2)
-library(dplyr)
-library(tidyr)
-library(lubridate)
-
-# Convert date column to Date type if not already done
-data$date <- as.Date(data$date)
-
 # Filter the data for 'England' and the relevant indicators
 data_filtered <- data %>%
     filter(entity == "England", 
@@ -225,7 +238,7 @@ monthly_corr <- data_wide %>%
 # Create the heatmap
 ggplot(monthly_corr, aes(x = month, y = 1, fill = correlation)) +
     geom_tile(color = "white") +
-    scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0, name = "Correlation") +
+    scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0, limits = c(-1,1),name = "Correlation") +
     labs(title = "Monthly Correlation Between ICU and Hospital Occupancy in England",
          x = "Month",
          y = "",
@@ -242,20 +255,14 @@ ggplot(monthly_corr, aes(x = month, y = 1, fill = correlation)) +
     scale_y_discrete(limits = c("Correlation"))  # Ensure y-axis is labeled properly
 
 ```
-#### Inspecting correlation
 
-From this, we see that there is a clear correlation throughout the pandemic, however it looks like there is no correlation in one of the months. We assume this may be because of missing data, so we adjust our code to allow for all missing data to see if this is the problem.
+
+
+From this, we see that there is a clear correlation throughout the pandemic, however it looks like there is no correlation in one of the months. We are unsure of the reason of this, so we take a look at all data included, along with missing data to see if this tells us anything.
+
 
 
 ```{r}
-library(ggplot2)
-library(dplyr)
-library(tidyr)
-library(lubridate)
-
-# Convert date column to Date type if not already done
-data$date <- as.Date(data$date)
-
 # Filter the data for 'England' and the relevant indicators
 data_filtered <- data %>%
     filter(entity == "England", 
@@ -289,7 +296,7 @@ monthly_corr <- all_months %>%
 # Create the heatmap
 ggplot(monthly_corr, aes(x = month, y = 1, fill = correlation)) +
     geom_tile(color = "white", width = 25) +
-    scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0, name = "Correlation") +
+    scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0, limits = c(-1,1), name = "Correlation") +
     labs(title = "Monthly Correlation Between ICU and Hospital Occupancy in England",
          x = "Month",
          y = "",
@@ -306,20 +313,17 @@ ggplot(monthly_corr, aes(x = month, y = 1, fill = correlation)) +
 
 ```
 
-We see from this heat map that a lack of data points wasn't the problem, and values were taken in the middle. An explanation for this is possibly the vaccine starting to take effect so the ICU admissions decreasing, however similar amounts of people are still being admitted to hospital, until it slowly averages out.
 
 
-###### Analaysis 3 could be looking at ICU rates in different countries, is there any relation? Are our findings supported by any other claims. I would expect the west to have had better resources so have done better
+We see from this heat map that a lack of data points wasn't the problem, and values were taken in the middle. An explanation for this is possibly the vaccine starting to take effect so the daily ICU admissions were increasing, however similar amounts of people were still being admitted to hospital, until it slowly averages out.
 
 
-##### Need a simple linear regression model
+
+## Section 3: Trying to Find a Linear Regression Model
+
 
 
 ```{r}
-# Load necessary libraries
-library(ggplot2)
-library(dplyr)
-
 # Filter the dataset for 'England' and the relevant indicators (ICU and hospital occupancy)
 england_data <- data %>%
   filter(entity == "England" & indicator %in% c("Daily ICU occupancy", "Daily hospital occupancy"))
@@ -340,7 +344,7 @@ summary(lm_model)
 # Scatter plot with regression line
 ggplot(england_wide, aes(x = `Daily ICU occupancy`, y = `Daily hospital occupancy`)) +
   geom_point(aes(color = "ICU vs Hospital Occupancy"), size = 2) +  # Scatter plot
-  geom_smooth(method = "lm", se = FALSE, color = "blue", size = 1.5) +  # Regression line
+  geom_smooth(method = "lm", se = FALSE, color = "blue", linewidth = 1.5) +  # Use linewidth instead of size
   labs(title = "Linear Regression: Daily Hospital Occupancy vs ICU Occupancy in England",
        x = "Daily ICU Occupancy",
        y = "Daily Hospital Occupancy") +
@@ -348,19 +352,16 @@ ggplot(england_wide, aes(x = `Daily ICU occupancy`, y = `Daily hospital occupanc
   scale_color_manual(name = "Occupancy Type", values = c("ICU vs Hospital Occupancy" = "green")) +
   theme(legend.position = "none")
 
+
 ```
+
+
+
 Here we can see a pretty good representation for Daily ICU occupancy to Daily Hospital Occupancy with this linear regression model, however we are going to try and change the colour gradient over time of the points to see if there are any points which look like they could be better represented by another regression model. 
+
+
+ 
 ```{r}
-# Load necessary libraries
-library(ggplot2)
-library(dplyr)
-
-# Assuming your dataset 'data' is already loaded
-# and contains columns: 'entity', 'date', 'indicator', and 'value'
-
-# Convert date column to Date type if not already done
-data$date <- as.Date(data$date)
-
 # Filter the data for 'England' and the relevant indicators
 data_filtered <- data %>%
     filter(entity == "England", 
@@ -374,68 +375,39 @@ data_wide <- data_filtered %>%
 # Remove rows with missing values
 data_wide <- na.omit(data_wide)
 
+# Define breaks for color gradient with more uniform distribution
+breaks_dates <- seq(as.Date("2020-01-06"), as.Date("2024-08-12"), by = "6 months")
+
 # Plot the scatter plot with color representing date
 ggplot(data_wide, aes(x = `Daily ICU occupancy`, y = `Daily hospital occupancy`, color = date)) +
     geom_point() +
-    scale_color_gradient(low = "blue", high = "red", 
-                         name = "Date Progression",
-                         breaks = as.Date(c("2020-01-06", "2021-01-01", "2022-01-01", "2023-01-01", "2024-08-12")),
-                         labels = c("Jan 2020", "Jan 2021", "Jan 2022", "Jan 2023", "Aug 2024")) +
+    scale_color_gradientn(colors = c("blue", "purple", "red"),  # Maintain original color scheme
+                          limits = c(as.Date("2020-01-06"), as.Date("2024-08-12")),
+                          values = scales::rescale(seq(0, 1, length.out = length(breaks_dates))),
+                          name = NULL,  # Remove legend title
+                          breaks = breaks_dates,
+                          labels = format(breaks_dates, "%b %Y")) +
     labs(title = "ICU vs Hospital Occupancy in England Over Time",
          x = "Daily ICU Occupancy",
          y = "Daily Hospital Occupancy") +
-    theme_minimal()
+    theme_minimal() +
+    theme(axis.title.x = element_text(vjust = -0.5),  # Adjust x-axis label position
+          plot.title = element_text(size = 14, hjust = 0.5),  # Center align title and adjust size
+          legend.position = "right",  # Position legend on the right side
+          legend.text = element_text(size = 8),  # Adjust size of the labels under the gradient scale
+          legend.key.size = unit(1.5, "cm"))  # Increase the length of the color gradient legend
 
-```
-from this colour gradient, it looks like towards the back end of our data, and the start of our data, we have a better correlation, so it would better to see each of them individually. This is because one is before the vaccine, and the others is after the vaccine has taken full effect.
-
-
-```{r}
-# Load necessary libraries
-library(ggplot2)
-library(dplyr)
-
-# Convert date column to Date type if not already done
-data$date <- as.Date(data$date)
-
-# Filter the data for 'England', relevant indicators, and the first 6 months
-data_filtered <- data %>%
-    filter(entity == "England", 
-           indicator %in% c("Daily ICU occupancy", "Daily hospital occupancy"),
-           date >= as.Date("2020-01-01") & date <= as.Date("2020-06-30")) %>%
-    select(entity, date, indicator, value)
-
-# Pivot data to wide format to have ICU and hospital occupancy in separate columns
-data_wide <- data_filtered %>%
-    pivot_wider(names_from = indicator, values_from = value)
-
-# Remove rows with missing values
-data_wide <- na.omit(data_wide)
-
-# Perform linear regression
-model <- lm(`Daily hospital occupancy` ~ `Daily ICU occupancy`, data = data_wide)
-
-# Plot the scatter plot with regression line (green dots and blue straight line)
-ggplot(data_wide, aes(x = `Daily ICU occupancy`, y = `Daily hospital occupancy`)) +
-    geom_point(color = "green") +  # Green dots
-    geom_abline(intercept = coef(model)[1], slope = coef(model)[2], color = "blue", linetype = "solid") +  # Blue straight regression line
-    labs(title = "Linear Regression of ICU vs Hospital Occupancy (Jan 2020 - June 2020)",
-         x = "Daily ICU Occupancy",
-         y = "Daily Hospital Occupancy") +
-    theme_minimal()
 
 ```
 
-##### Here, we are looking at the rates from January 2020 up to June 2020, so at the start of the pandemic, with no vaccine available. Great line of best fit.
+
+
+
+From this colour gradient, it looks like towards the back end of our data, and the start of our data, we have a better correlation. So it would better to see each of them individually. This is because one is before the vaccine, and the other is after the vaccine has taken full effect.
+
+
 
 ```{r}
-# Load necessary libraries
-library(ggplot2)
-library(dplyr)
-
-# Convert date column to Date type if not already done
-data$date <- as.Date(data$date)
-
 # Filter the data for 'England', relevant indicators, and the first 6 months
 data_filtered <- data %>%
     filter(entity == "England", 
@@ -453,6 +425,9 @@ data_wide <- na.omit(data_wide)
 # Perform linear regression
 model <- lm(`Daily hospital occupancy` ~ `Daily ICU occupancy`, data = data_wide)
 
+# Perform summary of the model
+summary(model)
+
 # Plot the scatter plot with regression line (green dots and blue straight line)
 ggplot(data_wide, aes(x = `Daily ICU occupancy`, y = `Daily hospital occupancy`)) +
     geom_point(color = "green") +  # Green dots
@@ -464,4 +439,64 @@ ggplot(data_wide, aes(x = `Daily ICU occupancy`, y = `Daily hospital occupancy`)
 
 ```
 
-##### From looking at this, it seems like we have a good regression model for ICU Occupancy to Hospital Occupancy from January 2023 to June 2023, after the heights of the COVID pandemic
+
+
+From looking at this, it seems like we have a good regression model for ICU Occupancy to Hospital Occupancy from January 2023 to June 2023, after the heights of the COVID pandemic. After looking at the summary, we can see from the R-Squared that 89.54% of the variance in the dependent variable can be explained by the independent variable. This means that generally, the model fits the data well. With the F-statistic being quite high, it means the model provides a significantly better fit than a model without any predictors.
+
+
+
+```{r}
+# Filter the data for 'England', relevant indicators, and the first 6 months
+data_filtered <- data %>%
+    filter(entity == "England", 
+           indicator %in% c("Daily ICU occupancy", "Daily hospital occupancy"),
+           date >= as.Date("2020-01-01") & date <= as.Date("2020-06-30")) %>%
+    select(entity, date, indicator, value)
+
+# Pivot data to wide format to have ICU and hospital occupancy in separate columns
+data_wide <- data_filtered %>%
+    pivot_wider(names_from = indicator, values_from = value)
+
+# Remove rows with missing values
+data_wide <- na.omit(data_wide)
+
+# Perform linear regression
+model <- lm(`Daily hospital occupancy` ~ `Daily ICU occupancy`, data = data_wide)
+
+# Perform summary of the model
+summary(model)
+
+# Plot the scatter plot with regression line (green dots and blue straight line)
+ggplot(data_wide, aes(x = `Daily ICU occupancy`, y = `Daily hospital occupancy`)) +
+    geom_point(color = "green") +  # Green dots
+    geom_abline(intercept = coef(model)[1], slope = coef(model)[2], color = "blue", linetype = "solid") +  # Blue straight regression line
+    labs(title = "Linear Regression of ICU vs Hospital Occupancy (Jan 2020 - June 2020)",
+         x = "Daily ICU Occupancy",
+         y = "Daily Hospital Occupancy") +
+    theme_minimal()
+
+```
+
+
+
+Here, we are looking at the rates from January 2020 up to June 2020, so at the start of the pandemic, with no vaccine available. Great line of best fit which suggests this linear regression model fits well. From looking at our Multiple R-Squared, we can see this is outstanding, at 97.63%. Our ICU Daily Admissions can predict how many Daily Hospital Admissions we have with great success. 
+
+
+
+## Section 4: Conclusion
+
+
+In this section we were very successful at altering our data to allow us to find a good regression fit. Out heat maps were relatively unsuccessful at giving us much information on possible regression, aside from initiating the foundational ideas that we could look at the start and end of our data for maximum correlation.
+
+After realising we could do this, we were quick to find a very good example of regression, specifically looking at ICU and Hospital addmissions. It makes sense one would affect the other intuitively so it was very satisfying to find an almost perfect relation.
+
+
+
+## Section 5: References
+https://www.digitalocean.com/community/tutorials/unique-function-r-programming - Help using the unique function
+
+https://www.educative.io/answers/what-is-the-filter-method-in-r - Help using the filter function
+
+https://www.littlemissdata.com/blog/heatmaps - Help with my heatmaps
+
+
