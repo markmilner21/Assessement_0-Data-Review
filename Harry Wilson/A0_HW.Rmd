@@ -6,21 +6,15 @@ output: html_document
 
 ## Introduction
 
+
+
 In the following code we analyse COVID-19 hospitalisation data within the UK and across the world. We aim to look for any relations between the data through the code we find, and seeing how we can improve our findings to give us more insight into how the global pandemic affected healthcare facilities worldwide.
 
 
-The following pre-requisites are required:
-```{r}
-library(ggplot2)
-library(dplyr)
-library(reshape2)
-library(lubridate)
-library(tidyr)
 
-```
+## Obtaining the Data
 
 
-## Instructions for Importing the Dataset
 
 1. The first dataset is here: https://ourworldindata.org/covid-hospitalizations
 2. You can find a link to the CSV file on Our World in Data's GitHub here, called 'covid-hospitalizations.csv': https://github.com/owid/covid-19-data/tree/master/public/data/hospitalizations
@@ -28,13 +22,17 @@ library(tidyr)
 
 
 
-## Exploratory Data Analaysis
 
 
 
-### A brief look
+
+## Section 1: A Brief Look
+
+
 
 In this section we will complete an first analysis to see how different countries across the world coped.
+
+
 
 ```{r}
 # Read the dataset
@@ -122,7 +120,7 @@ ggplot(icu_data, aes(x = date, y = value, color = entity)) +
 We can see that each of the countries, France initially struggled the most, doubling Englands ICU occupancy per million. This shows how much of a strain they were under. We see England coped okay relatively, however Portugal was also put under a lot of strain in early 2021.
 
 
-### Looking in more depth
+## Section 2: Exploratory Data Analysis
 
 
 
@@ -289,7 +287,7 @@ We see from this heat map that a lack of data points wasn't the problem, and val
 
 
 
-### Trying to find a regression model
+## Section 3: Trying to Find a Linear Regression Model
 
 
 
