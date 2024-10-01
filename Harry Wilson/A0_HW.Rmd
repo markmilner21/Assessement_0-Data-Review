@@ -4,6 +4,36 @@ output: html_document
 ---
 
 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Packages 
+
+
+
+```{r}
+#install.packages("ggplot2")
+#install.packages("dplyr")
+#install.packages("reshape2")
+#install.packages("lubridate")
+#install.packages("tidyr")
+```
+
+
+
+```{r message=FALSE, warning=FALSE}
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+library(lubridate)
+library(tidyr)
+```
+
+
+
 ## Introduction
 
 
@@ -12,7 +42,7 @@ In the following code we analyse COVID-19 hospitalisation data within the UK and
 
 
 
-## Obtaining the Data
+## Data Source
 
 
 
@@ -20,13 +50,38 @@ In the following code we analyse COVID-19 hospitalisation data within the UK and
 2. You can find a link to the CSV file on Our World in Data's GitHub here, called 'covid-hospitalizations.csv': https://github.com/owid/covid-19-data/tree/master/public/data/hospitalizations
 3. Save this file to your desired location, under the file-name 'covid-hospitalizations.csv'
 
+## Section 1: Data Access
+
+
+```{r}
+## For the reader
+
+#data_path = "[replace with your path]"
+
+#hosp_path = file.path(data_path, "covid-hospitalizations.csv")
+
+#data = read.csv(hosp_path)
+```
 
 
 
+```{r}
+## For the author
+
+data <- read.csv("/Users/harrywilson/Desktop/DataScienceToolbox/DataSets/covid-hospitalizations.csv")
+```
 
 
 
-## Section 1: A Brief Look
+```{r}
+head(data)
+```
+
+
+
+This allows us to check if our dataset has been installed correctly, as if it has we should see the first few rows and columns of our dataset.
+
+## Section 2: Exploratory Data Analysis
 
 
 
@@ -35,9 +90,6 @@ In this section we will complete an first analysis to see how different countrie
 
 
 ```{r}
-# Read the dataset
-data <- read.csv("/Users/harrywilson/Desktop/DataScienceToolbox/DataSets/covid-hospitalizations.csv")
-
 # Select only the relevant columns
 data$date <- as.Date(data$date)
 icu_data <- data %>%
@@ -60,12 +112,6 @@ In this first graph, we are looking at all the countries in our data set and the
 
 
 ```{r}
-# Read the dataset
-data <- read.csv("/Users/harrywilson/Desktop/DataScienceToolbox/DataSets/covid-hospitalizations.csv")
-
-# Convert date column to Date type
-data$date <- as.Date(data$date)
-
 # Select only relevant columns and filter for specific locations
 selected_locations <- c("England", "France", "Portugal")  
 
@@ -91,15 +137,6 @@ From this graph, we can see that each ICU occupation rate in each of the countri
 
 
 ```{r}
-# Read the dataset
-data <- read.csv("/Users/harrywilson/Desktop/DataScienceToolbox/DataSets/covid-hospitalizations.csv")
-
-# Convert date column to Date type
-data$date <- as.Date(data$date)
-
-# Select only relevant columns and filter for specific locations
-selected_locations <- c("England", "France", "Portugal") 
-
 icu_data <- data %>%
     filter(indicator == "Daily ICU occupancy per million", entity %in% selected_locations) %>%
     select(date, entity, value)
@@ -120,7 +157,8 @@ ggplot(icu_data, aes(x = date, y = value, color = entity)) +
 We can see that each of the countries, France initially struggled the most, doubling Englands ICU occupancy per million. This shows how much of a strain they were under. We see England coped okay relatively, however Portugal was also put under a lot of strain in early 2021.
 
 
-## Section 2: Exploratory Data Analysis
+
+#### Digging a bit deeper
 
 
 
@@ -175,9 +213,6 @@ From this first heat map we can see there is a clear correlation between Daily I
 
 
 ```{r}
-# Convert date column to Date type if not already done
-data$date <- as.Date(data$date)
-
 # Filter the data for 'England' and the relevant indicators
 data_filtered <- data %>%
     filter(entity == "England", 
@@ -228,9 +263,6 @@ From this, we see that there is a clear correlation throughout the pandemic, how
 
 
 ```{r}
-# Convert date column to Date type if not already done
-data$date <- as.Date(data$date)
-
 # Filter the data for 'England' and the relevant indicators
 data_filtered <- data %>%
     filter(entity == "England", 
@@ -330,9 +362,6 @@ Here we can see a pretty good representation for Daily ICU occupancy to Daily Ho
 
  
 ```{r}
-# Convert date column to Date type if not already done
-data$date <- as.Date(data$date)
-
 # Filter the data for 'England' and the relevant indicators
 data_filtered <- data %>%
     filter(entity == "England", 
@@ -379,9 +408,6 @@ From this colour gradient, it looks like towards the back end of our data, and t
 
 
 ```{r}
-# Convert date column to Date type if not already done
-data$date <- as.Date(data$date)
-
 # Filter the data for 'England', relevant indicators, and the first 6 months
 data_filtered <- data %>%
     filter(entity == "England", 
@@ -420,9 +446,6 @@ From looking at this, it seems like we have a good regression model for ICU Occu
 
 
 ```{r}
-# Convert date column to Date type if not already done
-data$date <- as.Date(data$date)
-
 # Filter the data for 'England', relevant indicators, and the first 6 months
 data_filtered <- data %>%
     filter(entity == "England", 
@@ -457,5 +480,23 @@ ggplot(data_wide, aes(x = `Daily ICU occupancy`, y = `Daily hospital occupancy`)
 
 
 Here, we are looking at the rates from January 2020 up to June 2020, so at the start of the pandemic, with no vaccine available. Great line of best fit which suggests this linear regression model fits well. From looking at our Multiple R-Squared, we can see this is outstanding, at 97.63%. Our ICU Daily Admissions can predict how many Daily Hospital Admissions we have with great success. 
+
+
+
+## Section 4: Conclusion
+
+
+In this section we were very successful at altering our data to allow us to find a good regression fit. Out heat maps were relatively unsuccessful at giving us much information on possible regression, aside from initiating the foundational ideas that we could look at the start and end of our data for maximum correlation.
+
+After realising we could do this, we were quick to find a very good example of regression, specifically looking at ICU and Hospital addmissions. It makes sense one would affect the other intuitively so it was very satisfying to find an almost perfect relation.
+
+
+
+## Section 5: References
+https://www.digitalocean.com/community/tutorials/unique-function-r-programming - Help using the unique function
+
+https://www.educative.io/answers/what-is-the-filter-method-in-r - Help using the filter function
+
+https://www.littlemissdata.com/blog/heatmaps - Help with my heatmaps
 
 
