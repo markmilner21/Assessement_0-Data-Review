@@ -53,7 +53,7 @@ In the following code we analyse COVID-19 hospitalisation data within the UK and
 ## Section 1: Data Access
 
 
-```{r}
+```{r} 
 ## For the reader
 
 #data_path = "[replace with your path]"
